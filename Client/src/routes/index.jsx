@@ -3,8 +3,10 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import MainLayout from '../layouts/MainLayout'
 import ErrorBoundary from '../components/ErrorBoundary'
+import ProtectedRoute from '../components/ProtectedRoute'
 
 // Lazy loaded pages
+const Login = lazy(() => import('../pages/Login'))
 const SaasDashboard = lazy(() => import('../pages/SaasDashboard'))
 const Leads = lazy(() => import('../pages/Leads'))
 const LeadGenerate = lazy(() => import('../pages/LeadGenerate'))
@@ -23,8 +25,17 @@ const LoadingSpinner = () => (
 
 const router = createBrowserRouter([
   {
+    path: '/login',
+    element: (
+      <Suspense fallback={<LoadingSpinner />}>
+        <Login />
+      </Suspense>
+    ),
+  },
+
+  {
     path: '/',
-    element: <Navigate to="/admin/dashboard" replace />,
+    element: <Navigate to="/login" replace />,
   },
 
   {
@@ -32,7 +43,9 @@ const router = createBrowserRouter([
 
     element: (
       <ErrorBoundary>
-        <MainLayout />
+        <ProtectedRoute>
+          <MainLayout />
+        </ProtectedRoute>
       </ErrorBoundary>
     ),
 

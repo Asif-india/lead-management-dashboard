@@ -4,7 +4,7 @@
  * Centralized API service with error handling, caching, and performance optimization
  */
 
-import { API_ENDPOINTS, ERROR_MESSAGES, DEFAULTS } from '../constants'
+import { API_ENDPOINTS, ERROR_MESSAGES, DEFAULTS, STORAGE_KEYS } from '../constants'
 import { performanceMonitor } from '../utils/performance'
 
 /**
@@ -41,15 +41,15 @@ const createTimeoutController = (timeout) => {
  */
 const parseResponse = async (response) => {
   const contentType = response.headers.get('content-type')
-  
+
   if (contentType?.includes('application/json')) {
     return await response.json()
   }
-  
+
   if (contentType?.includes('text/')) {
     return await response.text()
   }
-  
+
   return await response.blob()
 }
 
@@ -61,7 +61,7 @@ const handleApiError = async (response, data) => {
   error.status = response.status
   error.code = data?.code
   error.details = data?.errors || data?.details
-  
+
   // Log error for debugging
   console.log('BACKEND VALIDATION:', data)
   console.error('API Error:', {
@@ -70,7 +70,20 @@ const handleApiError = async (response, data) => {
     message: error.message,
     details: error.details
   })
-  
+
+  // Handle authentication errors (401, 403)
+  if (response.status === 401 || response.status === 403) {
+    // Clear authentication tokens
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+    localStorage.removeItem('user')
+
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login'
+    }
+  }
+
   throw error
 }
 
@@ -80,13 +93,13 @@ const handleApiError = async (response, data) => {
 const makeRequest = async (url, options = {}, retryCount = 0) => {
   const { controller, timeoutId } = createTimeoutController(API_CONFIG.timeout)
   const cacheKey = `${options.method || 'GET'}:${url}`
-  
+
   try {
     // Check for active duplicate requests
     if (options.method === 'GET' && activeRequests.has(cacheKey)) {
       return await activeRequests.get(cacheKey)
     }
-    
+
     // Check cache for GET requests
     if (options.method === 'GET' && !options.skipCache) {
       const cached = requestCache.get(cacheKey)
@@ -94,7 +107,7 @@ const makeRequest = async (url, options = {}, retryCount = 0) => {
         return cached.data
       }
     }
-    
+
     // Add Authorization header if token exists
     const token = localStorage.getItem('auth_token')
     const headers = {
@@ -104,33 +117,33 @@ const makeRequest = async (url, options = {}, retryCount = 0) => {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
-    
+
     // Create request promise
     const requestPromise = fetch(url, {
       ...options,
       signal: controller.signal,
       headers
     })
-    
+
     // Track active request
     if (options.method === 'GET') {
       activeRequests.set(cacheKey, requestPromise)
     }
-    
+
     const response = await requestPromise
     const data = await parseResponse(response)
-    
+
     // Clean up
     clearTimeout(timeoutId)
     if (options.method === 'GET') {
       activeRequests.delete(cacheKey)
     }
-    
+
     // Handle error responses
     if (!response.ok) {
       await handleApiError(response, data)
     }
-    
+
     // Cache successful GET requests
     if (options.method === 'GET' && !options.skipCache) {
       requestCache.set(cacheKey, {
@@ -138,22 +151,22 @@ const makeRequest = async (url, options = {}, retryCount = 0) => {
         timestamp: Date.now()
       })
     }
-    
+
     return data
-    
+
   } catch (error) {
     clearTimeout(timeoutId)
     activeRequests.delete(cacheKey)
-    
+
     // Retry logic for network errors
-    if (retryCount < API_CONFIG.retryAttempts && 
-        (error.name === 'AbortError' || error.name === 'TypeError')) {
+    if (retryCount < API_CONFIG.retryAttempts &&
+      (error.name === 'AbortError' || error.name === 'TypeError')) {
       console.warn(`Retrying request (${retryCount + 1}/${API_CONFIG.retryAttempts}):`, url)
-      
+
       await new Promise(resolve => setTimeout(resolve, API_CONFIG.retryDelay * Math.pow(2, retryCount)))
       return makeRequest(url, options, retryCount + 1)
     }
-    
+
     throw error
   }
 }
@@ -171,14 +184,14 @@ class ApiService {
    */
   buildUrl(endpoint, params = {}) {
     const url = new URL(this.baseURL + endpoint)
-    
+
     // Add query parameters
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value))
       }
     })
-    
+
     return url.toString()
   }
 
@@ -187,11 +200,11 @@ class ApiService {
    */
   async get(endpoint, params = {}, options = {}) {
     performanceMonitor.startMark(`api-${endpoint}-get`)
-    
+
     try {
       const url = this.buildUrl(endpoint, params)
       const data = await makeRequest(url, { method: 'GET', ...options })
-      
+
       performanceMonitor.endMark(`api-${endpoint}-get`)
       return data
     } catch (error) {
@@ -205,7 +218,7 @@ class ApiService {
    */
   async post(endpoint, data = {}, options = {}) {
     performanceMonitor.startMark(`api-${endpoint}-post`)
-    
+
     try {
       const url = this.buildUrl(endpoint)
       const response = await makeRequest(url, {
@@ -213,7 +226,7 @@ class ApiService {
         body: JSON.stringify(data),
         ...options
       })
-      
+
       performanceMonitor.endMark(`api-${endpoint}-post`)
       return response
     } catch (error) {
@@ -227,7 +240,7 @@ class ApiService {
    */
   async put(endpoint, data = {}, options = {}) {
     performanceMonitor.startMark(`api-${endpoint}-put`)
-    
+
     try {
       const url = this.buildUrl(endpoint)
       const response = await makeRequest(url, {
@@ -235,7 +248,7 @@ class ApiService {
         body: JSON.stringify(data),
         ...options
       })
-      
+
       performanceMonitor.endMark(`api-${endpoint}-put`)
       return response
     } catch (error) {
@@ -249,7 +262,7 @@ class ApiService {
    */
   async patch(endpoint, data = {}, options = {}) {
     performanceMonitor.startMark(`api-${endpoint}-patch`)
-    
+
     try {
       const url = this.buildUrl(endpoint)
       const response = await makeRequest(url, {
@@ -257,7 +270,7 @@ class ApiService {
         body: JSON.stringify(data),
         ...options
       })
-      
+
       performanceMonitor.endMark(`api-${endpoint}-patch`)
       return response
     } catch (error) {
@@ -271,14 +284,14 @@ class ApiService {
    */
   async delete(endpoint, options = {}) {
     performanceMonitor.startMark(`api-${endpoint}-delete`)
-    
+
     try {
       const url = this.buildUrl(endpoint)
       const response = await makeRequest(url, {
         method: 'DELETE',
         ...options
       })
-      
+
       performanceMonitor.endMark(`api-${endpoint}-delete`)
       return response
     } catch (error) {
@@ -292,11 +305,11 @@ class ApiService {
    */
   async upload(endpoint, file, options = {}) {
     performanceMonitor.startMark(`api-${endpoint}-upload`)
-    
+
     try {
       const formData = new FormData()
       formData.append('file', file)
-      
+
       const url = this.buildUrl(endpoint)
       const response = await makeRequest(url, {
         method: 'POST',
@@ -304,7 +317,7 @@ class ApiService {
         headers: {}, // Let browser set content-type for FormData
         ...options
       })
-      
+
       performanceMonitor.endMark(`api-${endpoint}-upload`)
       return response
     } catch (error) {
@@ -318,14 +331,14 @@ class ApiService {
    */
   async download(endpoint, filename, options = {}) {
     performanceMonitor.startMark(`api-${endpoint}-download`)
-    
+
     try {
       const url = this.buildUrl(endpoint)
       const response = await makeRequest(url, {
         method: 'GET',
         ...options
       })
-      
+
       // Create download link
       const blob = new Blob([response])
       const downloadUrl = window.URL.createObjectURL(blob)
@@ -336,7 +349,7 @@ class ApiService {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(downloadUrl)
-      
+
       performanceMonitor.endMark(`api-${endpoint}-download`)
       return response
     } catch (error) {
@@ -377,18 +390,35 @@ const formatLeadData = (data) => {
     address: data.address,
     zipCode: data.zipCode,
     studentName: data.studentName,
-    course: data.course,
+    studentEmail: data.studentEmail,
+    studentPhone: data.studentPhone,
+    studentAge: data.studentAge,
     university: data.collegeName,
+    collegeType: data.collegeType,
+    course: data.course,
+    graduationYear: data.graduationYear,
     leadStatus: 'new',
-    priority: (data.priority || 'medium').toLowerCase(),
-    notes: data.notes || ''
+    priority: 'medium',
+    source: data.source,
+    // assignedTo: data.assignedTo,
+    followUpDate: data.followUpDate,
+    notes: data.notes,
+    ...(data.assignedTo && {
+      assignedTo: data.assignedTo
+    }),
+
+    // university: data.collegeName,
+    // leadStatus: 'new',
+    // priority: (data.priority || 'medium').toLowerCase(),
+    // notes: data.notes || ''
   }
 }
 
 export const leadsApi = {
   getList: (params) => apiService.get(API_ENDPOINTS.LEADS.LIST, params),
+  getById: (id) => apiService.get(`/leads/${id}`),
   create: (data) => apiService.post(API_ENDPOINTS.LEADS.CREATE, formatLeadData(data)),
-  update: (id, data) => apiService.put(API_ENDPOINTS.LEADS.UPDATE.replace(':id', id), data),
+  update: (id, data) => apiService.patch(API_ENDPOINTS.LEADS.UPDATE.replace(':id', id), data),
   delete: (id) => apiService.delete(API_ENDPOINTS.LEADS.DELETE.replace(':id', id)),
   generate: (data) => apiService.post(API_ENDPOINTS.LEADS.GENERATE, data)
 }
@@ -396,7 +426,17 @@ export const leadsApi = {
 export const analyticsApi = {
   getDashboard: () => apiService.get(API_ENDPOINTS.ANALYTICS.DASHBOARD),
   getTrends: (params) => apiService.get(API_ENDPOINTS.ANALYTICS.TRENDS, params),
-  getReports: (params) => apiService.get(API_ENDPOINTS.ANALYTICS.REPORTS, params)
+  getReports: (params) => apiService.get(API_ENDPOINTS.ANALYTICS.REPORTS, params),
+  getComprehensive: () => apiService.get('/analytics/comprehensive')
+}
+
+export const incentivesApi = {
+  getList: (params) => apiService.get('/incentives', params),
+  getById: (id) => apiService.get(`/incentives/${id}`),
+  create: (data) => apiService.post('/incentives', data),
+  update: (id, data) => apiService.patch(`/incentives/${id}`, data),
+  delete: (id) => apiService.delete(`/incentives/${id}`),
+  getAnalytics: () => apiService.get('/incentives/analytics')
 }
 
 export const usersApi = {

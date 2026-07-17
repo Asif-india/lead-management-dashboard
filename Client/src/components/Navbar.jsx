@@ -14,6 +14,7 @@ import {
   HelpCircle
 } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../context/AuthContext'
 
 const Navbar = ({ isMobile, isTablet, isLargeScreen, setIsMobileOpen, isCollapsed }) => {
   const navigate = useNavigate()
@@ -22,6 +23,7 @@ const Navbar = ({ isMobile, isTablet, isLargeScreen, setIsMobileOpen, isCollapse
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const { isDark, toggleTheme } = useTheme()
+  const { user, logout } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -348,8 +350,8 @@ const Navbar = ({ isMobile, isTablet, isLargeScreen, setIsMobileOpen, isCollapse
                     className="absolute right-0 mt-2 w-56 bg-popover border border-border rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl"
                   >
                     <div className="p-4 border-b border-border">
-                      <p className="text-foreground font-semibold">John Doe</p>
-                      <p className="text-muted-foreground text-sm">john.doe@company.com</p>
+                      <p className="text-foreground font-semibold">{user?.name || user?.email || 'User'}</p>
+                      <p className="text-muted-foreground text-sm">{user?.email || 'No email'}</p>
                     </div>
                     <div className="py-2">
                       <motion.button
@@ -375,6 +377,7 @@ const Navbar = ({ isMobile, isTablet, isLargeScreen, setIsMobileOpen, isCollapse
                             damping: 17
                           }
                         }}
+                        onClick={() => navigate('/admin/settings')}
                         className="w-full px-4 py-2 text-left text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors flex items-center space-x-3"
                       >
                         <Settings className="w-4 h-4" />
@@ -390,6 +393,7 @@ const Navbar = ({ isMobile, isTablet, isLargeScreen, setIsMobileOpen, isCollapse
                             damping: 17
                           }
                         }}
+                        onClick={logout}
                         className="w-full px-4 py-2 text-left text-red-400 hover:text-red-300 hover:bg-destructive/10 transition-colors flex items-center space-x-3"
                       >
                         <LogOut className="w-4 h-4" />

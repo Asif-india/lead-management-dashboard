@@ -11,6 +11,7 @@ import {
   getDepartmentAnalyticsHandler,
   getPriorityAnalyticsHandler,
   getAnalyticsReportHandler,
+  getComprehensiveLeadAnalyticsHandler,
 } from '../controllers/index.js';
 import { protect, restrictTo } from '../middleware/index.js';
 
@@ -81,6 +82,17 @@ router.get(
   '/report',
   protect,
   getAnalyticsReportHandler
+);
+
+/**
+ * @route   GET /api/v1/analytics/comprehensive
+ * @desc    Get comprehensive lead analytics for frontend dashboard
+ * @access  Private
+ */
+router.get(
+  '/comprehensive',
+  protect,
+  getComprehensiveLeadAnalyticsHandler
 );
 
 export default router;

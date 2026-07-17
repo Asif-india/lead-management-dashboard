@@ -56,19 +56,40 @@ export const createLeadSchema = Joi.object({
   university: Joi.string().trim().required().messages({
     'string.empty': 'University is required',
   }),
+  studentEmail: Joi.string().trim().email().allow('').messages({
+    'string.email': 'Please provide a valid student email address',
+  }),
+  studentPhone: Joi.string().trim().allow('').messages({
+    'string.empty': 'Student phone number must be a string',
+  }),
+  studentAge: Joi.number().integer().min(10).max(100).allow(null).messages({
+    'number.min': 'Student age must be at least 10',
+    'number.max': 'Student age must not exceed 100',
+  }),
+  collegeType: Joi.string().trim().allow('').messages({
+    'string.empty': 'College type must be a string',
+  }),
+  graduationYear: Joi.number().integer().min(2000).max(2030).allow(null).messages({
+    'number.min': 'Graduation year must be at least 2000',
+    'number.max': 'Graduation year must not exceed 2030',
+  }),
   leadStatus: Joi.string()
     .valid(...Object.values(LEAD_STATUS))
     .default(LEAD_STATUS.NEW),
   priority: Joi.string()
     .valid(...Object.values(LEAD_PRIORITY))
     .default(LEAD_PRIORITY.MEDIUM),
+  source: Joi.string().trim().allow('').messages({
+    'string.empty': 'Source must be a string',
+  }),
   notes: Joi.string().trim().max(1000).messages({
     'string.max': 'Notes cannot exceed 1000 characters',
   }),
-  assignedTo: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
-    'string.pattern.base': 'Invalid user ID format',
-  }),
-  followUpDate: Joi.date().iso(),
+  // assignedTo: Joi.string().allow('').pattern(/^[0-9a-fA-F]{24}$/).messages({
+  //   'string.pattern.base': 'Invalid user ID format',
+  // }),
+  assignedTo: Joi.string().allow('').allow(null),
+  followUpDate: Joi.date().iso().allow(null),
 });
 
 /**
@@ -86,8 +107,8 @@ export const updateLeadSchema = Joi.object({
   department: Joi.string()
     .valid('Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Operations', 'IT', 'Legal')
     .messages({
-    'any.only': 'Please select a valid department',
-  }),
+      'any.only': 'Please select a valid department',
+    }),
   country: Joi.string().trim(),
   state: Joi.string().trim(),
   city: Joi.string().trim(),
@@ -98,15 +119,36 @@ export const updateLeadSchema = Joi.object({
   }),
   course: Joi.string().trim(),
   university: Joi.string().trim(),
+  studentEmail: Joi.string().trim().email().allow('').messages({
+    'string.email': 'Please provide a valid student email address',
+  }),
+  studentPhone: Joi.string().trim().allow('').messages({
+    'string.empty': 'Student phone number must be a string',
+  }),
+  studentAge: Joi.number().integer().min(10).max(100).allow(null).messages({
+    'number.min': 'Student age must be at least 10',
+    'number.max': 'Student age must not exceed 100',
+  }),
+  collegeType: Joi.string().trim().allow('').messages({
+    'string.empty': 'College type must be a string',
+  }),
+  graduationYear: Joi.number().integer().min(2000).max(2030).allow(null).messages({
+    'number.min': 'Graduation year must be at least 2000',
+    'number.max': 'Graduation year must not exceed 2030',
+  }),
   leadStatus: Joi.string().valid(...Object.values(LEAD_STATUS)),
   priority: Joi.string().valid(...Object.values(LEAD_PRIORITY)),
+  source: Joi.string().trim().allow('').messages({
+    'string.empty': 'Source must be a string',
+  }),
   notes: Joi.string().trim().max(1000).messages({
     'string.max': 'Notes cannot exceed 1000 characters',
   }),
-  assignedTo: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
-    'string.pattern.base': 'Invalid user ID format',
-  }),
-  followUpDate: Joi.date().iso(),
+  // assignedTo: Joi.string().allow('').pattern(/^[0-9a-fA-F]{24}$/).messages({
+  //   'string.pattern.base': 'Invalid user ID format',
+  // }),
+  assignedTo: Joi.string().allow('').allow(null),
+  followUpDate: Joi.date().iso().allow(null),
 }).min(1); // At least one field must be present
 
 /**

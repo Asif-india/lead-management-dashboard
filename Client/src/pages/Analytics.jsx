@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   TrendingUp,
@@ -12,6 +12,8 @@ import {
   Download,
   PieChart,
   UserCheck,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import {
   LineChart,
@@ -33,17 +35,46 @@ import {
   ComposedChart
 } from 'recharts'
 import { containerVariants, itemVariants } from '../constants/formAnimations'
-import {
-  monthlyLeadTrend,
-  countryWiseLeads,
-  employeePerformance,
-  conversionAnalytics,
-  leadSourceAnalytics,
-  performanceRadar,
-  analyticsStats
-} from '../constants/analyticsData'
+import { analyticsApi } from '../services/api'
 
 const Analytics = () => {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [analyticsData, setAnalyticsData] = useState(null)
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await analyticsApi.getComprehensive()
+        
+        // Handle different response structures
+        let data = null
+        if (response?.data) {
+          data = response.data
+        } else if (response?.success && response?.data) {
+          data = response.data
+        } else if (typeof response === 'object' && response !== null) {
+          data = response
+        }
+        
+        setAnalyticsData(data)
+        
+        if (!data || typeof data !== 'object') {
+          setError('Invalid analytics data received from server')
+        }
+      } catch (err) {
+        console.error('Error fetching analytics:', err)
+        setError('Failed to load analytics data. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAnalytics()
+  }, [])
+
   const iconMap = {
     Users,
     Target,
@@ -66,6 +97,114 @@ const Analytics = () => {
     }
     return null
   }
+
+  if (loading) {
+    return (
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex items-center justify-center min-h-[400px]"
+      >
+        <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+      </motion.div>
+    )
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex items-center justify-center min-h-[400px]"
+      >
+        <AlertCircle className="w-8 h-8 text-red-500 mb-4" />
+        <p className="text-foreground">{error}</p>
+      </motion.div>
+    )
+  }
+
+  if (!analyticsData || typeof analyticsData !== 'object') {
+    return (
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex items-center justify-center min-h-[400px]"
+      >
+        <AlertCircle className="w-8 h-8 text-red-500 mb-4" />
+        <p className="text-foreground">No analytics data available</p>
+      </motion.div>
+    )
+  }
+
+  // Format analytics data for display with defensive checks
+  const totalLeads = Number(analyticsData?.totalLeads) || 0
+  const conversionRate = Number(analyticsData?.conversionRate) || 0
+  const wonLeads = Number(analyticsData?.wonLeads) || 0
+  const activeCountries = Number(analyticsData?.activeCountries) || 0
+
+  // Don't render if critical data is missing
+  if (totalLeads === 0 && conversionRate === 0 && wonLeads === 0 && activeCountries === 0) {
+    return (
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex items-center justify-center min-h-[400px]"
+      >
+        <AlertCircle className="w-8 h-8 text-yellow-500 mb-4" />
+        <p className="text-foreground">No lead data available. Create some leads to see analytics.</p>
+      </motion.div>
+    )
+  }
+
+  const analyticsStats = [
+    {
+      title: 'Total Leads',
+      value: totalLeads.toLocaleString(),
+      change: '+12.5%',
+      trend: 'up',
+      icon: 'Users',
+      color: 'from-blue-500 to-cyan-600',
+      description: 'Generated this month'
+    },
+    {
+      title: 'Conversion Rate',
+      value: `${conversionRate.toFixed(1)}%`,
+      change: '+3.2%',
+      trend: 'up',
+      icon: 'Target',
+      color: 'from-green-500 to-emerald-600',
+      description: 'Overall conversion'
+    },
+    {
+      title: 'Revenue Generated',
+      value: `$${(wonLeads * 1000).toLocaleString()}`,
+      change: '+18.7%',
+      trend: 'up',
+      icon: 'DollarSign',
+      color: 'from-purple-500 to-pink-600',
+      description: 'Total revenue'
+    },
+    {
+      title: 'Active Countries',
+      value: activeCountries.toLocaleString(),
+      change: '+2',
+      trend: 'up',
+      icon: 'Globe',
+      color: 'from-orange-500 to-red-600',
+      description: 'Markets served'
+    }
+  ]
+
+  const monthlyLeadTrend = analyticsData.monthlyLeadTrend || []
+  const countryWiseLeads = analyticsData.countryWiseLeads || []
+  const employeePerformance = analyticsData.employeePerformance || []
+  const conversionAnalytics = analyticsData.conversionAnalytics || []
+  const leadSourceAnalytics = analyticsData.leadSourceAnalytics || []
+  const performanceRadar = analyticsData.performanceRadar || []
 
   return (
     <motion.div

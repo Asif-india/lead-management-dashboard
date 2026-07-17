@@ -12,6 +12,7 @@ import {
   getDepartmentAnalytics,
   getPriorityAnalytics,
   getAnalyticsReport,
+  getComprehensiveLeadAnalytics,
 } from '../services/index.js';
 
 /**
@@ -74,4 +75,14 @@ export const getAnalyticsReportHandler = asyncHandler(async (req, res) => {
   const { startDate, endDate } = req.query;
   const report = await getAnalyticsReport(startDate, endDate);
   sendSuccess(res, report, 'Analytics report fetched successfully');
+});
+
+/**
+ * @route   GET /api/v1/analytics/comprehensive
+ * @desc    Get comprehensive lead analytics for frontend dashboard
+ * @access  Private
+ */
+export const getComprehensiveLeadAnalyticsHandler = asyncHandler(async (req, res) => {
+  const analytics = await getComprehensiveLeadAnalytics();
+  sendSuccess(res, analytics, 'Comprehensive lead analytics fetched successfully');
 });

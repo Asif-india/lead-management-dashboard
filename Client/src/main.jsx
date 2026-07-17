@@ -5,19 +5,22 @@ import App from './App.jsx'
 import './styles/globals.css'
 import MuiThemeProvider from './components/MuiThemeProvider'
 import { ThemeProvider } from './context/ThemeContext'
+import { AuthProvider } from './context/AuthContext'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <MuiThemeProvider>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <App />
-        </motion.div>
-      </MuiThemeProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <MuiThemeProvider>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <App />
+          </motion.div>
+        </MuiThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   </React.StrictMode>,
 )

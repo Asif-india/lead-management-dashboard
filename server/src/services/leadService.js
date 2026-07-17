@@ -320,3 +320,45 @@ export const getAllLeads = async (query) => {
     },
   };
 };
+
+/**
+ * Get Lead By ID
+ */
+export const getLeadById = async (id) => {
+  const lead = await Lead.findById(id);
+
+  if (!lead) {
+    throw new AppError("Lead not found", HTTP_STATUS.NOT_FOUND);
+  }
+
+  return lead;
+};
+
+/**
+ * Update Lead
+ */
+export const updateLead = async (id, updateData) => {
+  const lead = await Lead.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!lead) {
+    throw new AppError("Lead not found", HTTP_STATUS.NOT_FOUND);
+  }
+
+  return lead;
+};
+
+/**
+ * Delete Lead
+ */
+export const deleteLead = async (id) => {
+  const lead = await Lead.findByIdAndDelete(id);
+
+  if (!lead) {
+    throw new AppError("Lead not found", HTTP_STATUS.NOT_FOUND);
+  }
+
+  return lead;
+};

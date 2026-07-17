@@ -6,10 +6,10 @@
 // API Endpoints
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/api/auth/login',
-    LOGOUT: '/api/auth/logout',
-    REFRESH: '/api/auth/refresh',
-    PROFILE: '/api/auth/profile'
+    LOGIN: '/auth/login',
+    LOGOUT: '/auth/logout',
+    REFRESH: '/auth/refresh',
+    PROFILE: '/auth/profile'
   },
   LEADS: {
     LIST: '/leads',

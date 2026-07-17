@@ -7,3 +7,4 @@ export * from './leadService.js';
 export * from './employeeService.js';
 export * from './authService.js';
 export * from './analyticsService.js';
+export * from './incentiveService.js';

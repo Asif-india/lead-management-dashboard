@@ -7,9 +7,9 @@ import express from 'express';
 import {
   createLeadHandler,
   getAllLeadsHandler,
-  // getLeadByIdHandler,
-  // updateLeadHandler,
-  // deleteLeadHandler,
+  getLeadByIdHandler,
+  updateLeadHandler,
+  deleteLeadHandler,
   // getLeadStatisticsHandler,
   // bulkUpdateLeadStatusHandler,
   // assignLeadHandler,
@@ -83,7 +83,7 @@ router.get(
 router.get(
   '/:id',
   protect,
-  // getLeadByIdHandler
+  getLeadByIdHandler
 );
 
 /**
@@ -95,7 +95,7 @@ router.patch(
   '/:id',
   protect,
   validateBody(updateLeadSchema),
-  // updateLeadHandler
+  updateLeadHandler
 );
 
 /**
@@ -115,11 +115,11 @@ router.patch(
  * @desc    Delete lead by ID
  * @access  Private
  */
-// router.delete(
-//   '/:id',
-//   protect,
-//   restrictTo('admin'),
-//   deleteLeadHandler
-// );
+router.delete(
+  '/:id',
+  protect,
+  restrictTo('admin'),
+  deleteLeadHandler
+);
 
 export default router;

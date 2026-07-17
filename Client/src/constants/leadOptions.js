@@ -77,13 +77,13 @@ export const collegeTypes = [
 ]
 
 export const leadStatuses = [
-  'New',
-  'Contacted',
-  'Qualified',
-  'Proposal',
-  'Negotiation',
-  'Closed Won',
-  'Closed Lost'
+  'new',
+  'contacted',
+  'qualified',
+  'proposal',
+  'negotiation',
+  'won',
+  'lost'
 ]
 
 export const departments = [
@@ -96,8 +96,8 @@ export const departments = [
 ]
 
 export const priorities = [
-  'Low',
-  'Medium',
-  'High',
-  'Urgent'
+  'low',
+  'medium',
+  'high',
+  'urgent'
 ]

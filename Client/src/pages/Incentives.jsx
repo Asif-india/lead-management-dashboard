@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Trophy,
@@ -16,7 +16,9 @@ import {
   Crown,
   Calculator,
   Filter,
-  Search
+  Search,
+  X,
+  Trash2
 } from 'lucide-react'
 import {
   Table,
@@ -34,7 +36,16 @@ import {
   InputAdornment,
   Avatar,
   LinearProgress,
-  Button
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Select,
+  MenuItem as SelectMenuItem,
+  FormControl,
+  InputLabel,
+  Box
 } from '@mui/material'
 import {
   AreaChart,
@@ -59,13 +70,7 @@ import {
   tableMutedCellSx,
   tableRowSx
 } from '../constants/formStyles'
-import {
-  incentiveStats,
-  monthlyIncentiveData,
-  employeeLeaderboard,
-  incentiveDistribution,
-  incentiveTableData
-} from '../constants/incentiveData'
+import { incentivesApi } from '../services/api'
 
 const MotionTableRow = motion(TableRow)
 
@@ -74,6 +79,84 @@ const Incentives = () => {
   const [selectedIncentive, setSelectedIncentive] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [analyticsData, setAnalyticsData] = useState(null)
+  const [incentives, setIncentives] = useState([])
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 })
+  
+  // Modal states
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [filterModalOpen, setFilterModalOpen] = useState(false)
+  const [viewModalOpen, setViewModalOpen] = useState(false)
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    employeeName: '',
+    employeeId: '',
+    department: '',
+    incentiveType: '',
+    amount: '',
+    status: 'pending',
+    quarter: '',
+    calculatedBy: 'System',
+    notes: '',
+    performance: 75,
+    totalEarned: 0,
+    currentMonth: 0,
+    totalIncentives: 0,
+    badges: []
+  })
+  
+  // Filter state
+  const [filterData, setFilterData] = useState({
+    status: 'all',
+    department: 'all',
+    incentiveType: 'all',
+    startDate: '',
+    endDate: ''
+  })
+
+  useEffect(() => {
+    fetchAnalytics()
+    fetchIncentives()
+  }, [])
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await incentivesApi.getAnalytics()
+      const data = response?.data || response
+      setAnalyticsData(data)
+    } catch (err) {
+      console.error('Error fetching analytics:', err)
+    }
+  }
+
+  const fetchIncentives = async (params = {}) => {
+    try {
+      setLoading(true)
+      const response = await incentivesApi.getList({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchQuery,
+        status: filterStatus,
+        ...params
+      })
+      const data = response?.data || response
+      setIncentives(Array.isArray(data) ? data : data.data || [])
+      setPagination(data.pagination || pagination)
+    } catch (err) {
+      console.error('Error fetching incentives:', err)
+      setError('Failed to load incentives')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchIncentives()
+  }, [searchQuery, filterStatus])
 
   const iconMap = {
     Target,
@@ -120,12 +203,181 @@ const Incentives = () => {
     setSelectedIncentive(null)
   }
 
-  const filteredIncentives = incentiveTableData.filter(incentive => {
-    const matchesSearch = incentive.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         incentive.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFilter = filterStatus === 'all' || incentive.status === filterStatus
-    return matchesSearch && matchesFilter
-  })
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }))
+    fetchIncentives({ page: newPage })
+  }
+
+  const handleCreateIncentive = async () => {
+    try {
+      const incentiveData = {
+        ...formData,
+        amount: Number(formData.amount),
+        performance: Number(formData.performance),
+        totalEarned: Number(formData.totalEarned),
+        currentMonth: Number(formData.currentMonth),
+        totalIncentives: Number(formData.totalIncentives)
+      }
+      await incentivesApi.create(incentiveData)
+      setCreateModalOpen(false)
+      resetForm()
+      fetchIncentives()
+      fetchAnalytics()
+    } catch (err) {
+      console.error('Error creating incentive:', err)
+      setError('Failed to create incentive')
+    }
+  }
+
+  const handleEditIncentive = async () => {
+    try {
+      const incentiveData = {
+        ...formData,
+        amount: Number(formData.amount),
+        performance: Number(formData.performance),
+        totalEarned: Number(formData.totalEarned),
+        currentMonth: Number(formData.currentMonth),
+        totalIncentives: Number(formData.totalIncentives)
+      }
+      await incentivesApi.update(selectedIncentive._id, incentiveData)
+      setEditModalOpen(false)
+      resetForm()
+      setSelectedIncentive(null)
+      fetchIncentives()
+      fetchAnalytics()
+    } catch (err) {
+      console.error('Error updating incentive:', err)
+      setError('Failed to update incentive')
+    }
+  }
+
+  const handleDeleteIncentive = async () => {
+    try {
+      await incentivesApi.delete(selectedIncentive._id)
+      setAnchorEl(null)
+      setSelectedIncentive(null)
+      fetchIncentives()
+      fetchAnalytics()
+    } catch (err) {
+      console.error('Error deleting incentive:', err)
+      setError('Failed to delete incentive')
+    }
+  }
+
+  const handleViewIncentive = () => {
+    setViewModalOpen(true)
+  }
+
+  const handleOpenEditModal = () => {
+    if (selectedIncentive) {
+      setFormData({
+        employeeName: selectedIncentive.employeeName,
+        employeeId: selectedIncentive.employeeId,
+        department: selectedIncentive.department,
+        incentiveType: selectedIncentive.incentiveType,
+        amount: selectedIncentive.amount,
+        status: selectedIncentive.status,
+        quarter: selectedIncentive.quarter || '',
+        calculatedBy: selectedIncentive.calculatedBy || 'System',
+        notes: selectedIncentive.notes || '',
+        performance: selectedIncentive.performance || 75,
+        totalEarned: selectedIncentive.totalEarned || 0,
+        currentMonth: selectedIncentive.currentMonth || 0,
+        totalIncentives: selectedIncentive.totalIncentives || 0,
+        badges: selectedIncentive.badges || []
+      })
+      setEditModalOpen(true)
+    }
+    setAnchorEl(null)
+  }
+
+  const handleApplyFilter = () => {
+    setFilterStatus(filterData.status)
+    fetchIncentives({
+      status: filterData.status,
+      department: filterData.department,
+      incentiveType: filterData.incentiveType,
+      startDate: filterData.startDate,
+      endDate: filterData.endDate
+    })
+    setFilterModalOpen(false)
+  }
+
+  const resetForm = () => {
+    setFormData({
+      employeeName: '',
+      employeeId: '',
+      department: '',
+      incentiveType: '',
+      amount: '',
+      status: 'pending',
+      quarter: '',
+      calculatedBy: 'System',
+      notes: '',
+      performance: 75,
+      totalEarned: 0,
+      currentMonth: 0,
+      totalIncentives: 0,
+      badges: []
+    })
+  }
+
+  // Format analytics data for display
+  const incentiveStats = analyticsData ? [
+    {
+      title: 'Active Incentives',
+      value: analyticsData.activeIncentives?.toString() || '0',
+      change: '+8.3%',
+      trend: 'up',
+      icon: 'Target',
+      color: 'from-blue-500 to-cyan-600',
+      description: 'Currently running'
+    },
+    {
+      title: 'Total Payout',
+      value: `$${(analyticsData.totalPayout / 1000).toFixed(1)}K`,
+      change: '+23.7%',
+      trend: 'up',
+      icon: 'DollarSign',
+      color: 'from-green-500 to-emerald-600',
+      description: 'This quarter'
+    },
+    {
+      title: 'Participants',
+      value: analyticsData.totalParticipants?.toString() || '0',
+      change: '+15.2%',
+      trend: 'up',
+      icon: 'Users',
+      color: 'from-purple-500 to-pink-600',
+      description: 'Active employees'
+    },
+    {
+      title: 'Avg. Incentive',
+      value: `$${Math.round(analyticsData.averageIncentive || 0)}`,
+      change: '+5.8%',
+      trend: 'up',
+      icon: 'Award',
+      color: 'from-orange-500 to-red-600',
+      description: 'Per employee'
+    }
+  ] : []
+
+  const monthlyIncentiveData = analyticsData?.monthlyTrends || []
+  const employeeLeaderboard = analyticsData?.leaderboard || []
+  const incentiveDistribution = analyticsData?.distribution || []
+
+  if (loading && !analyticsData) {
+    return (
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex items-center justify-center min-h-[400px]"
+      >
+        <LinearProgress sx={{ width: '200px' }} />
+      </motion.div>
+    )
+  }
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -170,6 +422,7 @@ const Incentives = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => setCreateModalOpen(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/25"
           >
             <Plus className="w-4 h-4" />
@@ -437,6 +690,7 @@ const Incentives = () => {
             <Button
               variant="outlined"
               startIcon={<Filter className="w-4 h-4" />}
+              onClick={() => setFilterModalOpen(true)}
               sx={secondaryButtonSx}
             >
               Filter
@@ -458,11 +712,11 @@ const Incentives = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredIncentives.map((incentive, index) => {
+              {incentives.map((incentive, index) => {
                 const statusColor = getStatusColor(incentive.status)
                 return (
                   <MotionTableRow
-                    key={incentive.id}
+                    key={incentive._id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -495,7 +749,7 @@ const Incentives = () => {
                         }}
                       />
                     </TableCell>
-                    <TableCell sx={tableMutedCellSx}>{incentive.date}</TableCell>
+                    <TableCell sx={tableMutedCellSx}>{new Date(incentive.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
@@ -512,6 +766,34 @@ const Incentives = () => {
           </Table>
         </TableContainer>
 
+        {/* Pagination */}
+        <div className="flex items-center justify-between mt-6">
+          <div className="text-sm text-muted-foreground">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} incentives
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              size="small"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              sx={secondaryButtonSx}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-foreground px-3">
+              Page {pagination.page} of {pagination.pages}
+            </span>
+            <Button
+              size="small"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page === pagination.pages}
+              sx={secondaryButtonSx}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+
         {/* Dropdown Menu */}
         <Menu
           anchorEl={anchorEl}
@@ -521,20 +803,373 @@ const Incentives = () => {
             sx: menuPaperSx
           }}
         >
-          <MenuItem onClick={handleMenuClose} sx={menuItemSx}>
+          <MenuItem onClick={handleViewIncentive} sx={menuItemSx}>
             <Eye className="w-4 h-4 mr-2" />
             View Details
           </MenuItem>
-          <MenuItem onClick={handleMenuClose} sx={menuItemSx}>
+          <MenuItem onClick={handleOpenEditModal} sx={menuItemSx}>
             <Edit className="w-4 h-4 mr-2" />
             Edit Incentive
           </MenuItem>
-          <MenuItem onClick={handleMenuClose} sx={menuItemSx}>
-            <Calculator className="w-4 h-4 mr-2" />
-            Recalculate
+          <MenuItem onClick={handleDeleteIncentive} sx={menuItemSx}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Incentive
           </MenuItem>
         </Menu>
       </motion.div>
+
+      {/* Create Incentive Modal */}
+      <Dialog open={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle className="text-foreground">Create New Incentive</DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4 mt-4">
+            <TextField
+              fullWidth
+              label="Employee Name"
+              value={formData.employeeName}
+              onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })}
+              sx={textFieldSx}
+            />
+            <TextField
+              fullWidth
+              label="Employee ID"
+              value={formData.employeeId}
+              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              sx={textFieldSx}
+            />
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Department</InputLabel>
+              <Select
+                value={formData.department}
+                label="Department"
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              >
+                <SelectMenuItem value="Engineering">Engineering</SelectMenuItem>
+                <SelectMenuItem value="Marketing">Marketing</SelectMenuItem>
+                <SelectMenuItem value="Sales">Sales</SelectMenuItem>
+                <SelectMenuItem value="HR">HR</SelectMenuItem>
+                <SelectMenuItem value="Finance">Finance</SelectMenuItem>
+                <SelectMenuItem value="Operations">Operations</SelectMenuItem>
+                <SelectMenuItem value="IT">IT</SelectMenuItem>
+                <SelectMenuItem value="Legal">Legal</SelectMenuItem>
+                <SelectMenuItem value="Customer Success">Customer Success</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Incentive Type</InputLabel>
+              <Select
+                value={formData.incentiveType}
+                label="Incentive Type"
+                onChange={(e) => setFormData({ ...formData, incentiveType: e.target.value })}
+              >
+                <SelectMenuItem value="Performance Bonus">Performance Bonus</SelectMenuItem>
+                <SelectMenuItem value="Sales Commission">Sales Commission</SelectMenuItem>
+                <SelectMenuItem value="Referral Bonus">Referral Bonus</SelectMenuItem>
+                <SelectMenuItem value="Recognition Award">Recognition Award</SelectMenuItem>
+                <SelectMenuItem value="Team Bonus">Team Bonus</SelectMenuItem>
+                <SelectMenuItem value="Campaign Success">Campaign Success</SelectMenuItem>
+                <SelectMenuItem value="Customer Satisfaction">Customer Satisfaction</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Amount"
+              type="number"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              sx={textFieldSx}
+            />
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={formData.status}
+                label="Status"
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              >
+                <SelectMenuItem value="pending">Pending</SelectMenuItem>
+                <SelectMenuItem value="processing">Processing</SelectMenuItem>
+                <SelectMenuItem value="approved">Approved</SelectMenuItem>
+                <SelectMenuItem value="rejected">Rejected</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Quarter"
+              value={formData.quarter}
+              onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
+              sx={textFieldSx}
+            />
+            <TextField
+              fullWidth
+              label="Notes"
+              multiline
+              rows={3}
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              sx={textFieldSx}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setCreateModalOpen(false); resetForm() }} sx={secondaryButtonSx}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreateIncentive} variant="contained" className="bg-gradient-to-r from-blue-500 to-purple-600">
+            Create Incentive
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Incentive Modal */}
+      <Dialog open={editModalOpen} onClose={() => setEditModalOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle className="text-foreground">Edit Incentive</DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4 mt-4">
+            <TextField
+              fullWidth
+              label="Employee Name"
+              value={formData.employeeName}
+              onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })}
+              sx={textFieldSx}
+            />
+            <TextField
+              fullWidth
+              label="Employee ID"
+              value={formData.employeeId}
+              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              sx={textFieldSx}
+            />
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Department</InputLabel>
+              <Select
+                value={formData.department}
+                label="Department"
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              >
+                <SelectMenuItem value="Engineering">Engineering</SelectMenuItem>
+                <SelectMenuItem value="Marketing">Marketing</SelectMenuItem>
+                <SelectMenuItem value="Sales">Sales</SelectMenuItem>
+                <SelectMenuItem value="HR">HR</SelectMenuItem>
+                <SelectMenuItem value="Finance">Finance</SelectMenuItem>
+                <SelectMenuItem value="Operations">Operations</SelectMenuItem>
+                <SelectMenuItem value="IT">IT</SelectMenuItem>
+                <SelectMenuItem value="Legal">Legal</SelectMenuItem>
+                <SelectMenuItem value="Customer Success">Customer Success</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Incentive Type</InputLabel>
+              <Select
+                value={formData.incentiveType}
+                label="Incentive Type"
+                onChange={(e) => setFormData({ ...formData, incentiveType: e.target.value })}
+              >
+                <SelectMenuItem value="Performance Bonus">Performance Bonus</SelectMenuItem>
+                <SelectMenuItem value="Sales Commission">Sales Commission</SelectMenuItem>
+                <SelectMenuItem value="Referral Bonus">Referral Bonus</SelectMenuItem>
+                <SelectMenuItem value="Recognition Award">Recognition Award</SelectMenuItem>
+                <SelectMenuItem value="Team Bonus">Team Bonus</SelectMenuItem>
+                <SelectMenuItem value="Campaign Success">Campaign Success</SelectMenuItem>
+                <SelectMenuItem value="Customer Satisfaction">Customer Satisfaction</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Amount"
+              type="number"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              sx={textFieldSx}
+            />
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={formData.status}
+                label="Status"
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              >
+                <SelectMenuItem value="pending">Pending</SelectMenuItem>
+                <SelectMenuItem value="processing">Processing</SelectMenuItem>
+                <SelectMenuItem value="approved">Approved</SelectMenuItem>
+                <SelectMenuItem value="rejected">Rejected</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Quarter"
+              value={formData.quarter}
+              onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
+              sx={textFieldSx}
+            />
+            <TextField
+              fullWidth
+              label="Notes"
+              multiline
+              rows={3}
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              sx={textFieldSx}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setEditModalOpen(false); resetForm(); setSelectedIncentive(null) }} sx={secondaryButtonSx}>
+            Cancel
+          </Button>
+          <Button onClick={handleEditIncentive} variant="contained" className="bg-gradient-to-r from-blue-500 to-purple-600">
+            Update Incentive
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Incentive Modal */}
+      <Dialog open={viewModalOpen} onClose={() => { setViewModalOpen(false); setAnchorEl(null) }} maxWidth="md" fullWidth>
+        <DialogTitle className="text-foreground">Incentive Details</DialogTitle>
+        <DialogContent>
+          {selectedIncentive && (
+            <Box className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground text-sm">Employee Name</p>
+                  <p className="text-foreground font-medium">{selectedIncentive.employeeName}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Employee ID</p>
+                  <p className="text-foreground font-medium">{selectedIncentive.employeeId}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Department</p>
+                  <p className="text-foreground font-medium">{selectedIncentive.department}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Incentive Type</p>
+                  <p className="text-foreground font-medium">{selectedIncentive.incentiveType}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Amount</p>
+                  <p className="text-green-400 font-semibold">${selectedIncentive.amount?.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Status</p>
+                  <Chip
+                    label={selectedIncentive.status}
+                    size="small"
+                    sx={{
+                      backgroundColor: getStatusColor(selectedIncentive.status).bg,
+                      color: getStatusColor(selectedIncentive.status).text,
+                      border: `1px solid ${getStatusColor(selectedIncentive.status).border}`,
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Quarter</p>
+                  <p className="text-foreground font-medium">{selectedIncentive.quarter || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Date</p>
+                  <p className="text-foreground font-medium">{new Date(selectedIncentive.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+              {selectedIncentive.notes && (
+                <div>
+                  <p className="text-muted-foreground text-sm">Notes</p>
+                  <p className="text-foreground">{selectedIncentive.notes}</p>
+                </div>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setViewModalOpen(false); setAnchorEl(null) }} sx={secondaryButtonSx}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Filter Modal */}
+      <Dialog open={filterModalOpen} onClose={() => setFilterModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle className="text-foreground">Filter Incentives</DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4 mt-4">
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={filterData.status}
+                label="Status"
+                onChange={(e) => setFilterData({ ...filterData, status: e.target.value })}
+              >
+                <SelectMenuItem value="all">All Statuses</SelectMenuItem>
+                <SelectMenuItem value="pending">Pending</SelectMenuItem>
+                <SelectMenuItem value="processing">Processing</SelectMenuItem>
+                <SelectMenuItem value="approved">Approved</SelectMenuItem>
+                <SelectMenuItem value="rejected">Rejected</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Department</InputLabel>
+              <Select
+                value={filterData.department}
+                label="Department"
+                onChange={(e) => setFilterData({ ...filterData, department: e.target.value })}
+              >
+                <SelectMenuItem value="all">All Departments</SelectMenuItem>
+                <SelectMenuItem value="Engineering">Engineering</SelectMenuItem>
+                <SelectMenuItem value="Marketing">Marketing</SelectMenuItem>
+                <SelectMenuItem value="Sales">Sales</SelectMenuItem>
+                <SelectMenuItem value="HR">HR</SelectMenuItem>
+                <SelectMenuItem value="Finance">Finance</SelectMenuItem>
+                <SelectMenuItem value="Operations">Operations</SelectMenuItem>
+                <SelectMenuItem value="IT">IT</SelectMenuItem>
+                <SelectMenuItem value="Legal">Legal</SelectMenuItem>
+                <SelectMenuItem value="Customer Success">Customer Success</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth sx={textFieldSx}>
+              <InputLabel>Incentive Type</InputLabel>
+              <Select
+                value={filterData.incentiveType}
+                label="Incentive Type"
+                onChange={(e) => setFilterData({ ...filterData, incentiveType: e.target.value })}
+              >
+                <SelectMenuItem value="all">All Types</SelectMenuItem>
+                <SelectMenuItem value="Performance Bonus">Performance Bonus</SelectMenuItem>
+                <SelectMenuItem value="Sales Commission">Sales Commission</SelectMenuItem>
+                <SelectMenuItem value="Referral Bonus">Referral Bonus</SelectMenuItem>
+                <SelectMenuItem value="Recognition Award">Recognition Award</SelectMenuItem>
+                <SelectMenuItem value="Team Bonus">Team Bonus</SelectMenuItem>
+                <SelectMenuItem value="Campaign Success">Campaign Success</SelectMenuItem>
+                <SelectMenuItem value="Customer Satisfaction">Customer Satisfaction</SelectMenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Start Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={filterData.startDate}
+              onChange={(e) => setFilterData({ ...filterData, startDate: e.target.value })}
+              sx={textFieldSx}
+            />
+            <TextField
+              fullWidth
+              label="End Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={filterData.endDate}
+              onChange={(e) => setFilterData({ ...filterData, endDate: e.target.value })}
+              sx={textFieldSx}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFilterModalOpen(false)} sx={secondaryButtonSx}>
+            Cancel
+          </Button>
+          <Button onClick={handleApplyFilter} variant="contained" className="bg-gradient-to-r from-blue-500 to-purple-600">
+            Apply Filters
+          </Button>
+        </DialogActions>
+      </Dialog>
     </motion.div>
   )
 }

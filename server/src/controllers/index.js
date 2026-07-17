@@ -7,3 +7,4 @@ export * from './leadController.js';
 export * from './employeeController.js';
 export * from './authController.js';
 export * from './analyticsController.js';
+export * from './incentiveController.js';
