@@ -439,6 +439,15 @@ export const incentivesApi = {
   getAnalytics: () => apiService.get('/incentives/analytics')
 }
 
+export const employeesApi = {
+  getList: (params) => apiService.get('/employees', params),
+  getById: (id) => apiService.get(`/employees/${id}`),
+  create: (data) => apiService.post('/employees', data),
+  update: (id, data) => apiService.patch(`/employees/${id}`, data),
+  delete: (id) => apiService.delete(`/employees/${id}`),
+  getStatistics: () => apiService.get('/employees/statistics/overview')
+}
+
 export const usersApi = {
   getList: (params) => apiService.get(API_ENDPOINTS.USERS.LIST, params),
   getProfile: () => apiService.get(API_ENDPOINTS.USERS.PROFILE),

@@ -168,7 +168,7 @@ const Navbar = ({ isMobile, isTablet, isLargeScreen, setIsMobileOpen, isCollapse
         animate={isScrolled ? 'scrolled' : 'top'}
         className={"fixed top-0 right-0 z-40 transition-all duration-300 backdrop-blur-2xl bg-card/80 " + (isScrolled ? 'bg-card/95' : '') + " " + (isMobile ? 'left-0' : isTablet ? (isCollapsed ? 'left-16' : 'left-64') : (isCollapsed ? 'left-20' : 'left-72'))}
       >
-        <div className={"flex items-center justify-between relative " + (isMobile ? 'h-14 px-4' : isTablet ? 'h-16 px-5' : isLargeScreen ? 'h-18 px-8' : 'h-16 px-6')}>
+        <div className={"flex items-center justify-between relative " + (isMobile ? 'h-14 px-4' : isTablet ? 'h-16 px-5' : isLargeScreen ? 'h-16 px-8' : 'h-16 px-6')}>
           {/* Navbar Background */}
           <div className="absolute inset-0 backdrop-blur-2xl border-b border-border/10" />
           {/* Left Section */}

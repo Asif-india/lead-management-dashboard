@@ -149,7 +149,7 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background">
+    <div className="h-screen overflow-hidden bg-background">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(59,130,246,0.1)_0%,transparent_50%)] opacity-30" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(168,85,247,0.1)_0%,transparent_50%)] opacity-30" />
@@ -178,7 +178,7 @@ const MainLayout = () => {
       <motion.main
         variants={mainContentVariants}
         animate={isMobile ? 'mobile' : isCollapsed ? 'collapsed' : 'expanded'}
-        className="min-h-screen overflow-hidden relative z-10"
+        className="h-screen overflow-y-auto relative z-10"
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -187,15 +187,15 @@ const MainLayout = () => {
             initial="initial"
             animate="animate"
             exit="exit"
-            className={`relative min-h-screen ${isMobile
-              ? 'px-4 pt-20 pb-4'
+            className={`relative min-h-full ${isMobile
+              ? 'px-4 pt-20 pb-6'
               : isTablet
-                ? 'px-6 pt-24 pb-6'
-                : 'px-8 pt-24 pb-8'
+                ? 'px-6 pt-20 pb-8'
+                : 'px-8 pt-20 pb-8'
               }`}
           >
             {/* Content Background */}
-            <div className="absolute inset-0 bg-surface/40 backdrop-blur-sm rounded-3xl border border-border pointer-events-none" />
+            <div className="absolute inset-0 bg-surface/30 backdrop-blur-sm rounded-2xl border border-border/20 pointer-events-none" />
             <motion.div
               variants={sectionVariants}
               initial="initial"
