@@ -133,8 +133,6 @@ const employeeSchema = new mongoose.Schema(
 );
 
 // Indexes for better query performance
-employeeSchema.index({ employeeId: 1 });
-employeeSchema.index({ email: 1 });
 employeeSchema.index({ department: 1 });
 employeeSchema.index({ employmentStatus: 1 });
 employeeSchema.index({ managerId: 1 });
