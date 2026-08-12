@@ -16,55 +16,37 @@ import {
   User,
   Plus
 } from 'lucide-react'
+import { useAnalytics } from '../context/AnalyticsContext'
+import { useAuth } from '../context/AuthContext'
+import { getMenuItemsForRole, MENU_ITEMS } from '../config/rolePermissions'
 
-const menuItems = [
-  {
-    name: 'Dashboard',
-    icon: LayoutDashboard,
-    path: '/admin/dashboard',
-    badge: null
-  },
-  {
-    name: 'Leads',
-    icon: Users,
-    path: '/admin/leads',
-    badge: '12'
-  },
-  {
-    name: 'Generate Lead',
-    icon: Plus,
-    path: '/admin/generate-lead',
-    badge: null
-  },
-  {
-    name: 'Analytics',
-    icon: TrendingUp,
-    path: '/admin/analytics',
-    badge: null
-  },
-  {
-    name: 'Incentives',
-    icon: Gift,
-    path: '/admin/incentives',
-    badge: '3'
-  },
-  {
-    name: 'Employees',
-    icon: Briefcase,
-    path: '/admin/employees',
-    badge: null
-  },
-  {
-    name: 'Settings',
-    icon: Settings,
-    path: '/admin/settings',
-    badge: null
-  }
-]
+const iconMap = {
+  LayoutDashboard,
+  Users,
+  Plus,
+  TrendingUp,
+  Gift,
+  Briefcase,
+  User,
+  Settings
+}
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScreen, isMobileOpen, setIsMobileOpen }) => {
   const location = useLocation()
   const [searchQuery, setSearchQuery] = useState('')
+  const { totalLeads, pendingIncentives, approvedIncentives } = useAnalytics()
+  const { user } = useAuth()
+
+  // Get role-based menu items
+  const userRole = user?.role?.toLowerCase() || 'sales_executive'
+  const roleMenuItems = getMenuItemsForRole(userRole)
+  
+  // Convert menu items to use icon map
+  const menuItems = roleMenuItems.map(item => ({
+    ...item,
+    icon: iconMap[item.icon] || Users,
+    badge: item.badgeKey
+  }))
 
   const filteredMenuItems = menuItems.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -262,7 +244,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                       <motion.div
                         layoutId="activeTab"
                         className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg shadow-blue-500/25"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        transition={{ type: "tween", ease: "easeOut", duration: 0.15 }}
                       />
                     )}
 
@@ -282,13 +264,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                         >
                           <span className="font-medium">{item.name}</span>
                           {item.badge && (
-                            <motion.span
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="px-2 py-1 text-xs font-semibold bg-white/10 dark:bg-black/20 text-white rounded-full"
-                            >
-                              {item.badge}
-                            </motion.span>
+                            <span className="px-2 py-1 text-xs font-semibold bg-blue-600 dark:bg-white/10 text-white dark:text-white rounded-full">
+                              {item.badge === 'totalLeads' ? totalLeads || 0 :
+                               item.badge === 'pendingIncentives' ? pendingIncentives || 0 :
+                               item.badge === 'approvedIncentives' ? (approvedIncentives || 0) :
+                               item.badge}
+                            </span>
                           )}
                         </motion.div>
                       )}

@@ -45,7 +45,9 @@ import {
   MenuItem as SelectMenuItem,
   FormControl,
   InputLabel,
-  Box
+  Box,
+  Snackbar,
+  Alert
 } from '@mui/material'
 import {
   AreaChart,
@@ -84,6 +86,11 @@ const Incentives = () => {
   const [analyticsData, setAnalyticsData] = useState(null)
   const [incentives, setIncentives] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 })
+
+  // Toast notification state
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastSeverity, setToastSeverity] = useState('success')
   
   // Modal states
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -145,7 +152,12 @@ const Incentives = () => {
       })
       const data = response?.data || response
       setIncentives(Array.isArray(data) ? data : data.data || [])
-      setPagination(data.pagination || pagination)
+      const paginationData = response?.data?.pagination || response?.pagination || {}
+      setPagination(prev => ({
+        ...prev,
+        ...paginationData,
+        pages: paginationData.totalPages || Math.ceil((paginationData.total || 0) / prev.limit)
+      }))
     } catch (err) {
       console.error('Error fetching incentives:', err)
       setError('Failed to load incentives')
@@ -155,7 +167,8 @@ const Incentives = () => {
   }
 
   useEffect(() => {
-    fetchIncentives()
+    setPagination(prev => ({ ...prev, page: 1 }))
+    fetchIncentives({ page: 1 })
   }, [searchQuery, filterStatus])
 
   const iconMap = {
@@ -223,9 +236,22 @@ const Incentives = () => {
       resetForm()
       fetchIncentives()
       fetchAnalytics()
+      setToastMessage('Incentive created successfully')
+      setToastSeverity('success')
+      setShowToast(true)
     } catch (err) {
       console.error('Error creating incentive:', err)
-      setError('Failed to create incentive')
+      if (err.status === 403) {
+        setError('You do not have permission to create incentives')
+        setToastMessage('You do not have permission to create incentives')
+        setToastSeverity('error')
+        setShowToast(true)
+      } else {
+        setError(err.message || 'Failed to create incentive')
+        setToastMessage(err.message || 'Failed to create incentive')
+        setToastSeverity('error')
+        setShowToast(true)
+      }
     }
   }
 
@@ -245,9 +271,22 @@ const Incentives = () => {
       setSelectedIncentive(null)
       fetchIncentives()
       fetchAnalytics()
+      setToastMessage('Incentive updated successfully')
+      setToastSeverity('success')
+      setShowToast(true)
     } catch (err) {
       console.error('Error updating incentive:', err)
-      setError('Failed to update incentive')
+      if (err.status === 403) {
+        setError('You do not have permission to edit incentives')
+        setToastMessage('You do not have permission to edit incentives')
+        setToastSeverity('error')
+        setShowToast(true)
+      } else {
+        setError(err.message || 'Failed to update incentive')
+        setToastMessage(err.message || 'Failed to update incentive')
+        setToastSeverity('error')
+        setShowToast(true)
+      }
     }
   }
 
@@ -258,9 +297,22 @@ const Incentives = () => {
       setSelectedIncentive(null)
       fetchIncentives()
       fetchAnalytics()
+      setToastMessage('Incentive deleted successfully')
+      setToastSeverity('success')
+      setShowToast(true)
     } catch (err) {
       console.error('Error deleting incentive:', err)
-      setError('Failed to delete incentive')
+      if (err.status === 403) {
+        setError('You do not have permission to delete incentives')
+        setToastMessage('You do not have permission to delete incentives')
+        setToastSeverity('error')
+        setShowToast(true)
+      } else {
+        setError(err.message || 'Failed to delete incentive')
+        setToastMessage(err.message || 'Failed to delete incentive')
+        setToastSeverity('error')
+        setShowToast(true)
+      }
     }
   }
 
@@ -1170,6 +1222,22 @@ const Incentives = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Toast Notification */}
+      <Snackbar
+        open={showToast}
+        autoHideDuration={5000}
+        onClose={() => setShowToast(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          severity={toastSeverity}
+          onClose={() => setShowToast(false)}
+          sx={{ width: '100%' }}
+        >
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </motion.div>
   )
 }

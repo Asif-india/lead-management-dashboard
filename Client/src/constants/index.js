@@ -19,14 +19,14 @@ export const API_ENDPOINTS = {
     GENERATE: '/leads/generate'
   },
   ANALYTICS: {
-    DASHBOARD: '/api/analytics/dashboard',
-    TRENDS: '/api/analytics/trends',
-    REPORTS: '/api/analytics/reports'
+    DASHBOARD: '/analytics/dashboard',
+    TRENDS: '/analytics/trends',
+    REPORTS: '/analytics/reports'
   },
   USERS: {
-    LIST: '/api/users',
-    PROFILE: '/api/users/profile',
-    SETTINGS: '/api/users/settings'
+    LIST: '/users',
+    PROFILE: '/users/profile',
+    SETTINGS: '/users/settings'
   }
 }
 

@@ -58,8 +58,6 @@ import {
 } from '../constants/formStyles'
 import { employeesApi } from '../services/api'
 
-const MotionTableRow = motion(TableRow)
-
 const Employees = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDepartment, setFilterDepartment] = useState('all')
@@ -117,7 +115,8 @@ const Employees = () => {
   }, [pagination.page])
 
   useEffect(() => {
-    fetchEmployees()
+    setPagination(prev => ({ ...prev, page: 1 }))
+    fetchEmployees({ page: 1 })
   }, [searchQuery, filterDepartment, filterStatus])
 
   const fetchStatistics = async () => {
@@ -144,7 +143,12 @@ const Employees = () => {
       const response = await employeesApi.getList(requestParams)
       const data = response?.data || response
       setEmployees(Array.isArray(data) ? data : data.data || [])
-      setPagination(data.pagination || pagination)
+      const paginationData = response?.data?.pagination || response?.pagination || {}
+      setPagination(prev => ({
+        ...prev,
+        ...paginationData,
+        pages: paginationData.totalPages || Math.ceil((paginationData.total || 0) / prev.limit)
+      }))
     } catch (err) {
       console.error('Error fetching employees:', err)
       setError('Failed to load employees')
@@ -656,17 +660,10 @@ const Employees = () => {
       </motion.div>
 
       {/* Employee Display */}
-      <motion.div variants={itemVariants} className="bg-card/50 border border-border/50 rounded-2xl p-6 backdrop-blur-sm">
-        <AnimatePresence mode="wait">
-          {viewMode === 'table' ? (
-            <motion.div
-              key="table"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
-            >
-              <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}>
+      <motion.div variants={itemVariants} className="bg-card/50 border border-border/50 rounded-2xl p-6 backdrop-blur-sm min-h-[300px]">
+        {viewMode === 'table' ? (
+          <div>
+            <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', boxShadow: 'none', overflowX: 'visible' }}>
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -679,7 +676,7 @@ const Employees = () => {
                       <TableCell sx={tableHeaderCellSx}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
-                  <TableBody>
+                  <TableBody sx={{ minHeight: `${pagination.limit * 60}px` }}>
                     {employees.map((employee, index) => {
                       const statusColor = getStatusColor(employee.employmentStatus)
                       const performanceColor = getPerformanceColor(employee.performance || 75)
@@ -687,11 +684,8 @@ const Employees = () => {
                       const fullName = `${employee.firstName} ${employee.lastName}`
                       const avatar = fullName.split(' ').map(n => n[0]).join('')
                       return (
-                        <MotionTableRow
+                        <TableRow
                           key={employee._id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
                           sx={tableRowSx}
                         >
                           <TableCell>
@@ -760,32 +754,54 @@ const Employees = () => {
                               <MoreVertical className="w-4 h-4" />
                             </IconButton>
                           </TableCell>
-                        </MotionTableRow>
+                        </TableRow>
                       )
                     })}
                   </TableBody>
                 </Table>
               </TableContainer>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="cards"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {employees.map((employee, index) => (
-                  <EmployeeCard key={employee._id} employee={employee} index={index} />
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {employees.map((employee, index) => (
+              <EmployeeCard key={employee._id} employee={employee} index={index} />
+            ))}
+          </div>
+        )}
 
-        {/* Dropdown Menu */}
-        <Menu
+        {/* Pagination */}
+        {pagination.total > 0 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/50">
+            <div className="text-sm text-muted-foreground">
+              Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} employees
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                size="small"
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                sx={{ color: 'hsl(var(--muted-foreground))', '&:hover': { color: 'hsl(var(--foreground))' } }}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-foreground px-3">
+                Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
+              </span>
+              <Button
+                size="small"
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
+                sx={{ color: 'hsl(var(--muted-foreground))', '&:hover': { color: 'hsl(var(--foreground))' } }}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Dropdown Menu */}
+      <Menu
           anchorEl={anchorEl}
           open={Boolean(anchorEl)}
           onClose={handleMenuClose}
@@ -814,35 +830,6 @@ const Employees = () => {
             Remove Employee
           </MenuItem>
         </Menu>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between mt-6">
-          <div className="text-sm text-muted-foreground">
-            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} employees
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              size="small"
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              sx={{ color: 'hsl(var(--muted-foreground))', '&:hover': { color: 'hsl(var(--foreground))' } }}
-            >
-              Previous
-            </Button>
-            <span className="text-sm text-foreground px-3">
-              Page {pagination.page} of {Math.ceil(pagination.total / pagination.limit)}
-            </span>
-            <Button
-              size="small"
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page >= Math.ceil(pagination.total / pagination.limit)}
-              sx={{ color: 'hsl(var(--muted-foreground))', '&:hover': { color: 'hsl(var(--foreground))' } }}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Create Employee Modal */}
       <Dialog open={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="md" fullWidth>

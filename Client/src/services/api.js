@@ -71,8 +71,8 @@ const handleApiError = async (response, data) => {
     details: error.details
   })
 
-  // Handle authentication errors (401, 403)
-  if (response.status === 401 || response.status === 403) {
+  // Handle authentication errors (401)
+  if (response.status === 401) {
     // Clear authentication tokens
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
@@ -82,6 +82,12 @@ const handleApiError = async (response, data) => {
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }
+  }
+
+  // Handle authorization errors (403) - do not redirect, just throw error
+  if (response.status === 403) {
+    // Do not clear tokens or redirect - user is authenticated but lacks permission
+    // The error will be thrown and handled by the component
   }
 
   throw error
@@ -451,7 +457,23 @@ export const employeesApi = {
 export const usersApi = {
   getList: (params) => apiService.get(API_ENDPOINTS.USERS.LIST, params),
   getProfile: () => apiService.get(API_ENDPOINTS.USERS.PROFILE),
-  updateSettings: (data) => apiService.put(API_ENDPOINTS.USERS.SETTINGS, data)
+  updateSettings: (data) => apiService.put(API_ENDPOINTS.USERS.SETTINGS, data),
+  create: (data) => apiService.post('/users', data),
+  getUserAuditLogs: (userId, params) => apiService.get(`/users/${userId}/audit-logs`, params),
+  changeRole: (userId, role) => apiService.patch(`/users/${userId}/role`, { role }),
+  updateStatus: (userId, status) => apiService.patch(`/users/${userId}/status`, { accountStatus: status }),
+  changeEmail: (userId, email) => apiService.patch(`/users/${userId}/email`, { email }),
+  changePassword: (userId, password) => apiService.patch(`/users/${userId}/password`, { password })
+}
+
+export const leadSourcesApi = {
+  getList: (params) => apiService.get('/lead-sources', params),
+  getActive: () => apiService.get('/lead-sources/active'),
+  getById: (id) => apiService.get(`/lead-sources/${id}`),
+  create: (data) => apiService.post('/lead-sources', data),
+  update: (id, data) => apiService.put(`/lead-sources/${id}`, data),
+  updateStatus: (id, status) => apiService.patch(`/lead-sources/${id}/status`, { status }),
+  delete: (id) => apiService.delete(`/lead-sources/${id}`)
 }
 
 /**
@@ -476,6 +498,7 @@ export default {
   leadsApi,
   analyticsApi,
   usersApi,
+  leadSourcesApi,
   clearCache,
   clearCacheEntry
 }

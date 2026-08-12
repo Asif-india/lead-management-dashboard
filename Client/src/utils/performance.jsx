@@ -34,6 +34,15 @@ export class PerformanceMonitor {
     if (!this.isSupported) return null
     
     try {
+      // Check if start mark exists to handle concurrent requests
+      const startMarkExists = performance.getEntriesByName(`${name}-start`, 'mark').length > 0
+      
+      if (!startMarkExists) {
+        // Start mark was already cleared by a concurrent request
+        // Skip measurement to avoid error
+        return null
+      }
+      
       performance.mark(`${name}-end`)
       performance.measure(name, `${name}-start`, `${name}-end`)
       

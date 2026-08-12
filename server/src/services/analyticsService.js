@@ -6,6 +6,7 @@
 import Lead from '../models/Lead.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
+import Incentive from '../models/Incentive.js';
 
 /**
  * Get dashboard overview statistics
@@ -315,6 +316,9 @@ export const getComprehensiveLeadAnalytics = async () => {
     statusDistribution,
     countryDistribution,
     monthlyTrend,
+    recentLeads,
+    recentIncentives,
+    incentiveStatusCounts,
   ] = await Promise.all([
     Lead.countDocuments(),
     Lead.aggregate([
@@ -375,6 +379,22 @@ export const getComprehensiveLeadAnalytics = async () => {
       },
       {
         $limit: 7,
+      },
+    ]),
+    Lead.find()
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('studentName leadStatus createdAt updatedAt assignedTo source'),
+    Incentive.find()
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select('employeeName amount status incentiveType createdAt updatedAt'),
+    Incentive.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
       },
     ]),
   ]);
@@ -522,6 +542,63 @@ export const getComprehensiveLeadAnalytics = async () => {
     targetAchievement: Math.min(150, Math.floor(item.targetAchievement)),
   }));
 
+  // Format incentive status counts for sidebar badges
+  const incentiveCounts = {
+    pending: 0,
+    processing: 0,
+    approved: 0,
+    rejected: 0
+  };
+  incentiveStatusCounts.forEach(item => {
+    if (incentiveCounts.hasOwnProperty(item._id)) {
+      incentiveCounts[item._id] = item.count;
+    }
+  });
+
+  // Format recent activities from real database records
+  const leadActivities = recentLeads.map(lead => {
+    let activityType = 'new_lead';
+    let message = `New lead: ${lead.studentName || 'Unknown'}`;
+    let value = '—';
+
+    if (lead.leadStatus === 'won') {
+      activityType = 'lead_converted';
+      message = `${lead.studentName || 'Unknown'} converted to customer`;
+      value = '₹1,000';
+    } else if (lead.assignedTo) {
+      activityType = 'lead_assigned';
+      message = `${lead.studentName || 'Unknown'} assigned to ${lead.assignedTo}`;
+    } else if (lead.leadStatus !== 'new') {
+      activityType = 'status_updated';
+      message = `${lead.studentName || 'Unknown'} status updated to ${lead.leadStatus}`;
+    }
+
+    return {
+      id: `lead-${lead._id?.toString()}`,
+      type: activityType,
+      message,
+      value,
+      timestamp: lead.updatedAt || lead.createdAt,
+    };
+  });
+
+  const incentiveActivities = recentIncentives.map(incentive => {
+    return {
+      id: `incentive-${incentive._id?.toString()}`,
+      type: 'incentive_earned',
+      message: `${incentive.employeeName || 'Unknown'} earned ${incentive.incentiveType || 'incentive'}`,
+      value: `₹${incentive.amount || 0}`,
+      timestamp: incentive.createdAt,
+    };
+  });
+
+  // Combine and sort all activities by timestamp descending
+  const allActivities = [...leadActivities, ...incentiveActivities]
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 5);
+
+  const recentActivities = allActivities;
+
   return {
     totalLeads,
     newLeads: statusCounts.new,
@@ -540,5 +617,10 @@ export const getComprehensiveLeadAnalytics = async () => {
     leadSourceAnalytics,
     performanceRadar,
     employeePerformance: formattedEmployeePerformance,
+    recentActivities,
+    approvedIncentives: incentiveCounts.approved,
+    pendingIncentives: incentiveCounts.pending,
+    processingIncentives: incentiveCounts.processing,
+    rejectedIncentives: incentiveCounts.rejected,
   };
 };

@@ -26,7 +26,7 @@ const router = express.Router();
 router.post(
   '/',
   protect,
-  restrictTo('admin', 'manager'),
+  restrictTo('administrator', 'manager'),
   validateBody(createIncentiveSchema),
   createIncentiveHandler
 );
@@ -73,7 +73,7 @@ router.get(
 router.patch(
   '/:id',
   protect,
-  restrictTo('admin', 'manager'),
+  restrictTo('administrator', 'manager'),
   validateBody(updateIncentiveSchema),
   updateIncentiveHandler
 );
@@ -86,7 +86,7 @@ router.patch(
 router.delete(
   '/:id',
   protect,
-  restrictTo('admin'),
+  restrictTo('administrator'),
   deleteIncentiveHandler
 );
 

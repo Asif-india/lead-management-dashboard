@@ -13,6 +13,8 @@ const LeadGenerate = lazy(() => import('../pages/LeadGenerate'))
 const Analytics = lazy(() => import('../pages/Analytics'))
 const Incentives = lazy(() => import('../pages/Incentives'))
 const Employees = lazy(() => import('../pages/Employees'))
+const Users = lazy(() => import('../pages/Users'))
+const LeadSources = lazy(() => import('../pages/LeadSources'))
 const Settings = lazy(() => import('../pages/Settings'))
 const NotFound = lazy(() => import('../pages/NotFound'))
 
@@ -122,6 +124,26 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <Employees />
+          </Suspense>
+        ),
+      },
+
+      {
+        path: 'users',
+
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <Users />
+          </Suspense>
+        ),
+      },
+
+      {
+        path: 'lead-sources',
+
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <LeadSources />
           </Suspense>
         ),
       },

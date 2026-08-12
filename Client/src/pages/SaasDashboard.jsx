@@ -57,8 +57,31 @@ const SaasDashboard = () => {
     leadSourcesData,
     conversionRateData,
     recentActivity,
-    topPerformers
+    topPerformers,
+    loading,
+    error
   } = useDashboard()
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center text-red-500">
+          <p>{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <motion.div
@@ -254,7 +277,7 @@ const SaasDashboard = () => {
             <XAxis dataKey="channel" {...XAXIS_CONFIG} />
             <YAxis {...YAXIS_CONFIG} />
             <Tooltip {...TOOLTIP_CONFIG} />
-            <Bar dataKey="rate" fill={BAR_CHART_CONFIG.fill} radius={BAR_CHART_CONFIG.radius} />
+            <Bar dataKey="conversionRate" fill={BAR_CHART_CONFIG.fill} radius={BAR_CHART_CONFIG.radius} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>

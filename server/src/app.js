@@ -10,7 +10,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { connectDatabase } from './config/index.js';
 import { errorHandler, requestLogger } from './middleware/index.js';
-import { leadRoutes, employeeRoutes, authRoutes, analyticsRoutes, incentiveRoutes } from './routes/index.js';
+import { leadRoutes, employeeRoutes, authRoutes, analyticsRoutes, incentiveRoutes, userRoutes, leadSourceRoutes } from './routes/index.js';
 
 const app = express();
 
@@ -61,6 +61,8 @@ app.use(`/api/${API_VERSION}/employees`, employeeRoutes);
 app.use(`/api/${API_VERSION}/auth`, authRoutes);
 app.use(`/api/${API_VERSION}/analytics`, analyticsRoutes);
 app.use(`/api/${API_VERSION}/incentives`, incentiveRoutes);
+app.use(`/api/${API_VERSION}/users`, userRoutes);
+app.use(`/api/${API_VERSION}/lead-sources`, leadSourceRoutes);
 
 // 404 handler for undefined routes
 app.all('*', (req, res, next) => {

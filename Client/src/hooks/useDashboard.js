@@ -1,40 +1,26 @@
-import {
-  getDashboardStats,
-  getLeadTrend,
-  getLeadSources,
-  getConversionRates,
-  getRecentActivities,
-  getTopPerformers
-} from '../services/dashboardService'
+import React from 'react'
+import { useAnalytics } from '../context/AnalyticsContext'
 
 /**
  * useDashboard Hook
  *
  * Custom hook for dashboard data management.
- * Acts as the single data provider for the dashboard component.
- * Consumes dashboardService for data fetching.
- * When backend APIs are available, only dashboardService needs to change.
+ * Consumes data from AnalyticsContext to avoid duplicate API calls.
+ * Ensures data is available after auth completes.
  *
- * @returns {Object} Dashboard data arrays
+ * @returns {Object} Dashboard data arrays and loading state
  */
 export const useDashboard = () => {
-  // Call service functions synchronously (they return static data)
-  // In the future, when dashboardService becomes async, this can be replaced with React Query:
-  // const { data: kpiStats } = useQuery('kpiStats', getDashboardStats)
-  
-  const kpiStats = getDashboardStats()
-  const leadTrendData = getLeadTrend()
-  const leadSourcesData = getLeadSources()
-  const conversionRateData = getConversionRates()
-  const recentActivity = getRecentActivities()
-  const topPerformers = getTopPerformers()
-  
+  const { loading, error, data, ...analyticsData } = useAnalytics()
+
   return {
-    kpiStats,
-    leadTrendData,
-    leadSourcesData,
-    conversionRateData,
-    recentActivity,
-    topPerformers
+    kpiStats: analyticsData.kpiStats || [],
+    leadTrendData: analyticsData.leadTrendData || [],
+    leadSourcesData: analyticsData.leadSourcesData || [],
+    conversionRateData: analyticsData.conversionRateData || [],
+    recentActivity: analyticsData.recentActivity || [],
+    topPerformers: analyticsData.topPerformers || [],
+    loading,
+    error
   }
 }
