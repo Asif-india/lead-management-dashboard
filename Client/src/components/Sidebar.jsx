@@ -14,7 +14,8 @@ import {
   Bell,
   Search,
   User,
-  Plus
+  Plus,
+  History
 } from 'lucide-react'
 import { useAnalytics } from '../context/AnalyticsContext'
 import { useAuth } from '../context/AuthContext'
@@ -28,7 +29,8 @@ const iconMap = {
   Gift,
   Briefcase,
   User,
-  Settings
+  Settings,
+  History
 }
 
 const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScreen, isMobileOpen, setIsMobileOpen }) => {

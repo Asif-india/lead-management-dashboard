@@ -80,6 +80,13 @@ export const MENU_ITEMS = [
     badgeKey: null
   },
   {
+    key: 'audit-history',
+    name: 'Audit History',
+    icon: 'History',
+    path: '/admin/audit-history',
+    badgeKey: null
+  },
+  {
     key: 'settings',
     name: 'Settings',
     icon: 'Settings',
@@ -104,6 +111,7 @@ export const ROLE_PERMISSIONS = {
     'employees',
     'users',
     'lead-sources',
+    'audit-history',
     'settings'
   ],
   [ROLES.MANAGER]: [
@@ -130,6 +138,7 @@ export const ROLE_PERMISSIONS = {
     'employees',
     'users',
     'lead-sources',
+    'audit-history',
     'settings'
   ],
   'sales_executive': [

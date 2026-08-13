@@ -15,6 +15,7 @@ const Incentives = lazy(() => import('../pages/Incentives'))
 const Employees = lazy(() => import('../pages/Employees'))
 const Users = lazy(() => import('../pages/Users'))
 const LeadSources = lazy(() => import('../pages/LeadSources'))
+const AuditHistory = lazy(() => import('../pages/AuditHistory'))
 const Settings = lazy(() => import('../pages/Settings'))
 const NotFound = lazy(() => import('../pages/NotFound'))
 
@@ -144,6 +145,16 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LoadingSpinner />}>
             <LeadSources />
+          </Suspense>
+        ),
+      },
+
+      {
+        path: 'audit-history',
+
+        element: (
+          <Suspense fallback={<LoadingSpinner />}>
+            <AuditHistory />
           </Suspense>
         ),
       },

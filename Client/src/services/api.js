@@ -501,7 +501,7 @@ export const usersApi = {
   getProfile: () => apiService.get(API_ENDPOINTS.USERS.PROFILE),
   updateSettings: (data) => apiService.put(API_ENDPOINTS.USERS.SETTINGS, data),
   create: (data) => apiService.post('/users', data),
-  getUserAuditLogs: (userId, params) => apiService.get(`/users/${userId}/audit-logs`, params),
+  getUserAuditLogs: (userId, params) => apiService.get(`/audit-logs/user/${userId}`, params),
   changeRole: (userId, role) => apiService.patch(`/users/${userId}/role`, { role }),
   updateStatus: (userId, status) => apiService.patch(`/users/${userId}/status`, { accountStatus: status }),
   changeEmail: (userId, email) => apiService.patch(`/users/${userId}/email`, { email }),
@@ -516,6 +516,11 @@ export const leadSourcesApi = {
   update: (id, data) => apiService.put(`/lead-sources/${id}`, data),
   updateStatus: (id, status) => apiService.patch(`/lead-sources/${id}/status`, { status }),
   delete: (id) => apiService.delete(`/lead-sources/${id}`)
+}
+
+export const auditLogsApi = {
+  getList: (params) => apiService.get('/audit-logs', params),
+  getByUser: (userId, params) => apiService.get(`/audit-logs/user/${userId}`, params)
 }
 
 /**
@@ -548,6 +553,7 @@ export default {
   analyticsApi,
   usersApi,
   leadSourcesApi,
+  auditLogsApi,
   clearCache,
   clearCacheEntry
 }
