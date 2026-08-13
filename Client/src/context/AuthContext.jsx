@@ -8,7 +8,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { authApi } from '../services/api'
+import { authApi, setAuthToken, clearAuthToken, clearCache } from '../services/api'
 import { STORAGE_KEYS, ROUTES } from '../constants'
 
 const AuthContext = createContext(null)
@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
 
     if (storedToken) {
       setToken(storedToken)
+      setAuthToken(storedToken)
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser))
@@ -63,9 +64,13 @@ export const AuthProvider = ({ children }) => {
       const response = await authApi.login(credentials)
 
       if (response.success && response.data?.token) {
+        // Clear cache on login to prevent stale data from previous sessions
+        clearCache()
+
         // Store token
         localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, response.data.token)
         setToken(response.data.token)
+        setAuthToken(response.data.token)
 
         // Store user info
         if (response.data.user) {
@@ -113,6 +118,10 @@ export const AuthProvider = ({ children }) => {
       setToken(null)
       setUser(null)
       setError(null)
+      clearAuthToken()
+
+      // Clear API cache to prevent stale data after logout
+      clearCache()
 
       // Redirect to login
       window.location.href = ROUTES.LOGIN

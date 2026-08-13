@@ -291,21 +291,27 @@ const SaasDashboard = () => {
           motionProps={{ variants: itemVariants }}
         >
           <div className="space-y-4">
-            {recentActivity.map((activity, index) => {
-              const Icon = getActivityIcon(activity.type)
-              return (
-                <ActivityCard
-                  key={activity.id}
-                  icon={Icon}
-                  iconColor={activity.color}
-                  message={activity.message}
-                  time={activity.time}
-                  value={activity.value}
-                  valueColor="text-green-400"
-                  delay={index * 0.1}
-                />
-              )
-            })}
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, index) => {
+                const Icon = getActivityIcon(activity.type)
+                return (
+                  <ActivityCard
+                    key={activity.id}
+                    icon={Icon}
+                    iconColor={activity.color}
+                    message={activity.message}
+                    time={activity.time}
+                    value={activity.value}
+                    valueColor="text-green-400"
+                    delay={index * 0.1}
+                  />
+                )
+              })
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No recent activity</p>
+              </div>
+            )}
           </div>
         </DashboardSection>
 

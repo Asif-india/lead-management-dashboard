@@ -72,11 +72,13 @@ import {
   tableMutedCellSx,
   tableRowSx
 } from '../constants/formStyles'
-import { incentivesApi } from '../services/api'
+import { incentivesApi, clearCacheEntry } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const MotionTableRow = motion(TableRow)
 
 const Incentives = () => {
+  const { loading: authLoading } = useAuth()
   const [anchorEl, setAnchorEl] = useState(null)
   const [selectedIncentive, setSelectedIncentive] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -126,9 +128,10 @@ const Incentives = () => {
   })
 
   useEffect(() => {
+    if (authLoading) return
     fetchAnalytics()
     fetchIncentives()
-  }, [])
+  }, [authLoading])
 
   const fetchAnalytics = async () => {
     try {
@@ -234,6 +237,8 @@ const Incentives = () => {
       await incentivesApi.create(incentiveData)
       setCreateModalOpen(false)
       resetForm()
+      clearCacheEntry('/incentives', 'GET')
+      clearCacheEntry('/incentives/analytics', 'GET')
       fetchIncentives()
       fetchAnalytics()
       setToastMessage('Incentive created successfully')
@@ -269,6 +274,8 @@ const Incentives = () => {
       setEditModalOpen(false)
       resetForm()
       setSelectedIncentive(null)
+      clearCacheEntry('/incentives', 'GET')
+      clearCacheEntry('/incentives/analytics', 'GET')
       fetchIncentives()
       fetchAnalytics()
       setToastMessage('Incentive updated successfully')
@@ -295,6 +302,8 @@ const Incentives = () => {
       await incentivesApi.delete(selectedIncentive._id)
       setAnchorEl(null)
       setSelectedIncentive(null)
+      clearCacheEntry('/incentives', 'GET')
+      clearCacheEntry('/incentives/analytics', 'GET')
       fetchIncentives()
       fetchAnalytics()
       setToastMessage('Incentive deleted successfully')

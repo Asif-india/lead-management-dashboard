@@ -42,7 +42,7 @@ const ActivityCard = ({
         <p className="text-foreground text-sm font-medium">{message}</p>
         <div className="flex items-center justify-between mt-1">
           <span className="text-muted-foreground text-xs">{time}</span>
-          <span className={`${valueColor} text-xs font-medium`}>{value}</span>
+          {value && <span className={`${valueColor} text-xs font-medium`}>{value}</span>}
         </div>
       </div>
     </MotionDiv>

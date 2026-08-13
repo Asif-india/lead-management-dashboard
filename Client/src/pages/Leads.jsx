@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { leadsApi } from '../services/api'
+import { leadsApi, clearCacheEntry } from '../services/api'
 import { PAGINATION } from '../constants'
 import Modal, { ConfirmModal } from '../components/ui/Modal'
 import { Plus, Search, Filter, Download, Eye, Edit, Trash2, User, Building, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const Leads = () => {
   const navigate = useNavigate()
+  const { loading: authLoading } = useAuth()
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -32,33 +34,35 @@ const Leads = () => {
 
   // Fetch leads from API with pagination and filters
   useEffect(() => {
+    if (authLoading) return
+
     const fetchLeads = async () => {
       try {
         setLoading(true)
         setError(null)
-        
+
         // Build query params
         const params = {
           page: currentPage,
           limit: pageSize
         }
-        
+
         // Add search term if provided
         if (searchTerm) {
           params.search = searchTerm
         }
-        
+
         // Add status filter if not 'all'
         if (selectedStatus !== 'all') {
           params.status = selectedStatus
         }
-        
+
         const response = await leadsApi.getList(params)
-        
+
         // Handle different API response structures
         const leadsData = Array.isArray(response) ? response : (response?.data?.data || response?.data || [])
         setLeads(leadsData)
-        
+
         // Extract pagination metadata
         const pagination = response?.data?.pagination || response?.pagination || {}
         setTotalRecords(pagination.total || 0)
@@ -154,6 +158,7 @@ const Leads = () => {
       await leadsApi.delete(leadToDelete._id)
       setDeleteConfirmOpen(false)
       setLeadToDelete(null)
+      clearCacheEntry('/leads', 'GET')
 
       // Check if current page will be empty after deletion
       const isLastPage = currentPage === totalPages

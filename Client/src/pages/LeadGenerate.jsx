@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useForm, Controller } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { leadsApi } from '@/services/api'
+import { leadsApi, clearCacheEntry } from '@/services/api'
 import { textFieldSx, selectSx, inputLabelSx, secondaryButtonSx, primaryButtonSx, successAlertSx, menuItemSx, menuPaperSx } from '../constants/formStyles'
 import { containerVariants } from '../constants/formAnimations'
 import { countries, states, cities, collegeTypes, leadStatuses, departments, priorities } from '../constants/leadOptions'
@@ -293,9 +293,11 @@ const LeadGenerate = () => {
 
       if (isEditMode) {
         await leadsApi.update(editLeadId, formattedData)
+        clearCacheEntry('/leads', 'GET')
       } else {
         // await leadsApi.create(data)
         const response = await leadsApi.create(data)
+        clearCacheEntry('/leads', 'GET')
 
         console.log("CREATE RESPONSE:", response)
       }

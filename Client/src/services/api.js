@@ -1,6 +1,6 @@
 /**
  * API Service Layer
- * 
+ *
  * Centralized API service with error handling, caching, and performance optimization
  */
 
@@ -26,6 +26,39 @@ const requestCache = new Map()
  * Active requests controller to prevent duplicate requests
  */
 const activeRequests = new Map()
+
+/**
+ * Get all cache keys that match a pattern (for clearing parameterized variants)
+ */
+const getMatchingCacheKeys = (pattern) => {
+  const keys = []
+  for (const key of requestCache.keys()) {
+    if (key.includes(pattern)) {
+      keys.push(key)
+    }
+  }
+  return keys
+}
+
+/**
+ * Auth token state (managed by AuthContext)
+ * This ensures the API always uses the current authenticated token
+ */
+let authToken = null
+
+/**
+ * Set the auth token (called by AuthContext)
+ */
+export const setAuthToken = (token) => {
+  authToken = token
+}
+
+/**
+ * Clear the auth token (called by AuthContext on logout)
+ */
+export const clearAuthToken = () => {
+  authToken = null
+}
 
 /**
  * Create abort controller for request timeout
@@ -115,7 +148,7 @@ const makeRequest = async (url, options = {}, retryCount = 0) => {
     }
 
     // Add Authorization header if token exists
-    const token = localStorage.getItem('auth_token')
+    const token = authToken || localStorage.getItem('auth_token')
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers
@@ -150,12 +183,19 @@ const makeRequest = async (url, options = {}, retryCount = 0) => {
       await handleApiError(response, data)
     }
 
-    // Cache successful GET requests
+    // Cache successful GET requests (only if data is not empty)
     if (options.method === 'GET' && !options.skipCache) {
-      requestCache.set(cacheKey, {
-        data,
-        timestamp: Date.now()
-      })
+      // Don't cache empty responses (arrays or objects)
+      const isEmptyArray = Array.isArray(data) && data.length === 0
+      const isEmptyObject = typeof data === 'object' && data !== null && Object.keys(data).length === 0
+      const isNull = data === null
+
+      if (!isEmptyArray && !isEmptyObject && !isNull) {
+        requestCache.set(cacheKey, {
+          data,
+          timestamp: Date.now()
+        })
+      }
     }
 
     return data
@@ -484,11 +524,18 @@ export const clearCache = () => {
 }
 
 /**
- * Clear specific cache entry
+ * Clear specific cache entry and all parameterized variants
  */
 export const clearCacheEntry = (endpoint, method = 'GET') => {
+  // Clear the exact match
   const cacheKey = `${method}:${endpoint}`
   requestCache.delete(cacheKey)
+
+  // Clear all parameterized variants (e.g., /leads?page=1, /leads?search=test)
+  const matchingKeys = getMatchingCacheKeys(endpoint)
+  matchingKeys.forEach(key => {
+    requestCache.delete(key)
+  })
 }
 
 export default {

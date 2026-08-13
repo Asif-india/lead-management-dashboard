@@ -56,7 +56,7 @@ export const MENU_ITEMS = [
     name: 'Incentives',
     icon: 'Gift',
     path: '/admin/incentives',
-    badgeKey: 'approvedIncentives'
+    badgeKey: 'pendingIncentives'
   },
   {
     key: 'employees',

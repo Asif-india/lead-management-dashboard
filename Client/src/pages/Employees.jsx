@@ -56,9 +56,11 @@ import {
   tableMutedCellSx,
   tableRowSx
 } from '../constants/formStyles'
-import { employeesApi } from '../services/api'
+import { employeesApi, clearCacheEntry } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const Employees = () => {
+  const { loading: authLoading } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDepartment, setFilterDepartment] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -104,9 +106,10 @@ const Employees = () => {
   const statuses = ['all', 'active', 'inactive', 'on-leave', 'terminated']
 
   useEffect(() => {
+    if (authLoading) return
     fetchStatistics()
     fetchEmployees()
-  }, [])
+  }, [authLoading])
 
   useEffect(() => {
     if (pagination.page > 1) {
@@ -115,6 +118,7 @@ const Employees = () => {
   }, [pagination.page])
 
   useEffect(() => {
+    if (authLoading) return
     setPagination(prev => ({ ...prev, page: 1 }))
     fetchEmployees({ page: 1 })
   }, [searchQuery, filterDepartment, filterStatus])
@@ -189,6 +193,8 @@ const Employees = () => {
       await employeesApi.create(employeeData)
       setCreateModalOpen(false)
       resetForm()
+      clearCacheEntry('/employees', 'GET')
+      clearCacheEntry('/employees/statistics/overview', 'GET')
       fetchEmployees()
       fetchStatistics()
       setSuccessMessage('Employee created successfully!')
@@ -210,6 +216,8 @@ const Employees = () => {
       setEditModalOpen(false)
       resetForm()
       setSelectedEmployee(null)
+      clearCacheEntry('/employees', 'GET')
+      clearCacheEntry('/employees/statistics/overview', 'GET')
       fetchEmployees()
       fetchStatistics()
       setSuccessMessage('Employee updated successfully!')
@@ -225,6 +233,8 @@ const Employees = () => {
       await employeesApi.delete(selectedEmployee._id)
       setAnchorEl(null)
       setSelectedEmployee(null)
+      clearCacheEntry('/employees', 'GET')
+      clearCacheEntry('/employees/statistics/overview', 'GET')
       fetchEmployees()
       fetchStatistics()
       setSuccessMessage('Employee deleted successfully!')

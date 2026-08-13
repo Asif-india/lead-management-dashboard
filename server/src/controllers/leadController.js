@@ -7,6 +7,7 @@ import {
   updateLead,
   deleteLead,
 } from "../services/leadService.js";
+import { createAuditLog } from "../services/auditLogService.js";
 
 /**
  * Create Lead
@@ -14,6 +15,22 @@ import {
 export const createLeadHandler = asyncHandler(
   async (req, res) => {
     const lead = await createLead(req.body);
+
+    // Log lead creation to AuditLog for Recent Activity
+    if (req.user && lead._id) {
+      await createAuditLog({
+        action: 'LEAD_CREATED',
+        performedBy: req.user._id,
+        entityType: 'Lead',
+        entityId: lead._id,
+        newValue: {
+          studentName: lead.studentName,
+          leadStatus: lead.leadStatus,
+          source: lead.source
+        },
+        description: `New lead: ${lead.studentName}`,
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -58,7 +75,21 @@ export const getLeadByIdHandler = asyncHandler(
  */
 export const updateLeadHandler = asyncHandler(
   async (req, res) => {
+    const oldLead = await getLeadById(req.params.id);
     const lead = await updateLead(req.params.id, req.body);
+
+    // Log lead status changes to AuditLog for Recent Activity
+    if (req.user && lead._id && oldLead.leadStatus !== lead.leadStatus) {
+      await createAuditLog({
+        action: 'LEAD_UPDATED',
+        performedBy: req.user._id,
+        entityType: 'Lead',
+        entityId: lead._id,
+        oldValue: { leadStatus: oldLead.leadStatus },
+        newValue: { leadStatus: lead.leadStatus, studentName: lead.studentName },
+        description: `${lead.studentName} status updated to ${lead.leadStatus}`,
+      });
+    }
 
     res.status(200).json({
       success: true,

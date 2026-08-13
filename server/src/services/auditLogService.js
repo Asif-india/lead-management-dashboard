@@ -321,3 +321,18 @@ export const logEmployeeStatusChanged = async (performedBy, targetEmployee, oldV
     description: `Employee status changed from ${oldValue} to ${newValue}`,
   });
 };
+
+/**
+ * Helper: Log incentive creation
+ */
+export const logIncentiveCreated = async (performedBy, targetIncentive, targetUser, additionalData = {}) => {
+  return createAuditLog({
+    action: 'INCENTIVE_CREATED',
+    performedBy,
+    targetUser,
+    entityType: 'Incentive',
+    entityId: targetIncentive,
+    newValue: additionalData,
+    description: `${additionalData.employeeName || 'Unknown'} earned ${additionalData.incentiveType || 'incentive'}`,
+  });
+};

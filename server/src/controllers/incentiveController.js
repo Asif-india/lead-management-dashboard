@@ -8,6 +8,7 @@ import {
   deleteIncentive,
   getComprehensiveIncentiveAnalytics,
 } from "../services/incentiveService.js";
+import { logIncentiveCreated } from "../services/auditLogService.js";
 
 /**
  * Create Incentive
@@ -15,6 +16,21 @@ import {
 export const createIncentiveHandler = asyncHandler(
   async (req, res) => {
     const incentive = await createIncentive(req.body);
+
+    // Log incentive creation to AuditLog for Recent Activity
+    if (req.user && incentive._id) {
+      await logIncentiveCreated(
+        req.user._id,
+        incentive._id,
+        req.user._id,
+        {
+          employeeName: incentive.employeeName,
+          incentiveType: incentive.incentiveType,
+          amount: incentive.amount,
+          status: incentive.status
+        }
+      );
+    }
 
     res.status(201).json({
       success: true,

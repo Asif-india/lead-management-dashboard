@@ -146,7 +146,7 @@ const mapDashboardResponse = (apiData) => {
       id: item.id || index + 1,
       type: item.type,
       message: item.message,
-      value: item.value,
+      value: item.value || null, // Keep null for no amount, don't show fake value
       time: formattedTime,
       timestamp: timestamp,
       icon: ACTIVITY_ICONS[item.type] || Users,

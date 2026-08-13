@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { leadSourcesApi } from '../services/api'
+import { leadSourcesApi, clearCacheEntry } from '../services/api'
 import { PAGINATION } from '../constants'
 import Modal, { ConfirmModal } from '../components/ui/Modal'
 import { Plus, Search, Filter, Eye, Edit, Trash2, Loader2, AlertCircle, ChevronLeft, ChevronRight, Building2, CheckCircle, XCircle } from 'lucide-react'
@@ -13,9 +13,11 @@ import {
   Alert
 } from '@mui/material'
 import { selectSx, menuItemSx, menuPaperSx } from '../constants/formStyles'
+import { useAuth } from '../context/AuthContext'
 
 const LeadSources = () => {
   const navigate = useNavigate()
+  const { loading: authLoading } = useAuth()
   const [leadSources, setLeadSources] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -46,33 +48,35 @@ const LeadSources = () => {
 
   // Fetch lead sources from API with pagination and filters
   useEffect(() => {
+    if (authLoading) return
+
     const fetchLeadSources = async () => {
       try {
         setLoading(true)
         setError(null)
-        
+
         // Build query params
         const params = {
           page: currentPage,
           limit: pageSize
         }
-        
+
         // Add search term if provided
         if (searchTerm) {
           params.search = searchTerm
         }
-        
+
         // Add status filter if not 'all'
         if (selectedStatus !== 'all') {
           params.status = selectedStatus
         }
-        
+
         const response = await leadSourcesApi.getList(params)
-        
+
         // Handle different API response structures
         const leadSourcesData = Array.isArray(response) ? response : (response?.data?.data || response?.data || [])
         setLeadSources(leadSourcesData)
-        
+
         // Extract pagination metadata
         const pagination = response?.data?.pagination || response?.pagination || {}
         setTotalRecords(pagination.total || 0)
@@ -89,7 +93,7 @@ const LeadSources = () => {
     }
 
     fetchLeadSources()
-  }, [currentPage, pageSize, searchTerm, selectedStatus])
+  }, [currentPage, pageSize, searchTerm, selectedStatus, authLoading])
 
   const statusColors = {
     active: 'bg-green-100 text-green-800',
@@ -159,7 +163,20 @@ const LeadSources = () => {
       setSelectedLeadSource(null)
       setEditFormData({ name: '', description: '', status: 'active' })
       setError(null)
-      // Refresh the list
+      clearCacheEntry('/lead-sources', 'GET')
+      // Directly refetch instead of relying on useEffect
+      const params = {
+        page: 1,
+        limit: pageSize,
+        search: searchTerm,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined
+      }
+      const response = await leadSourcesApi.getList(params)
+      const leadSourcesData = Array.isArray(response) ? response : (response?.data?.data || response?.data || [])
+      setLeadSources(leadSourcesData)
+      const pagination = response?.data?.pagination || response?.pagination || {}
+      setTotalRecords(pagination.total || 0)
+      setTotalPages(pagination.totalPages || Math.ceil((pagination.total || 0) / pageSize))
       setCurrentPage(1)
     } catch (err) {
       console.error('Error saving lead source:', err)
@@ -196,11 +213,24 @@ const LeadSources = () => {
       setDeleteConfirmOpen(false)
       setLeadSourceToDelete(null)
       setError(null)
+      clearCacheEntry('/lead-sources', 'GET')
+      // Directly refetch instead of relying on useEffect
+      const params = {
+        page: 1,
+        limit: pageSize,
+        search: searchTerm,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined
+      }
+      const response = await leadSourcesApi.getList(params)
+      const leadSourcesData = Array.isArray(response) ? response : (response?.data?.data || response?.data || [])
+      setLeadSources(leadSourcesData)
+      const pagination = response?.data?.pagination || response?.pagination || {}
+      setTotalRecords(pagination.total || 0)
+      setTotalPages(pagination.totalPages || Math.ceil((pagination.total || 0) / pageSize))
+      setCurrentPage(1)
       setToastMessage('Lead source deleted successfully')
       setToastSeverity('success')
       setShowToast(true)
-      // Refresh the list
-      setCurrentPage(1)
     } catch (err) {
       console.error('Error deleting lead source:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Failed to delete lead source. Please try again.'

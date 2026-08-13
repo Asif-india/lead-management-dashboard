@@ -7,6 +7,7 @@ import Lead from '../models/Lead.js';
 import Employee from '../models/Employee.js';
 import User from '../models/User.js';
 import Incentive from '../models/Incentive.js';
+import AuditLog from '../models/AuditLog.js';
 
 /**
  * Get dashboard overview statistics
@@ -316,6 +317,7 @@ export const getComprehensiveLeadAnalytics = async () => {
     statusDistribution,
     countryDistribution,
     monthlyTrend,
+    recentAuditLogs,
     recentLeads,
     recentIncentives,
     incentiveStatusCounts,
@@ -381,6 +383,21 @@ export const getComprehensiveLeadAnalytics = async () => {
         $limit: 7,
       },
     ]),
+    AuditLog.find({
+      action: {
+        $in: [
+          'LEAD_CREATED',
+          'LEAD_UPDATED',
+          'LEAD_DELETED',
+          'EMPLOYEE_CREATED',
+        ]
+      }
+    })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate('performedBy', 'firstName lastName email role')
+      .populate('targetUser', 'firstName lastName email')
+      .populate('targetEmployee', 'firstName lastName employeeId'),
     Lead.find()
       .sort({ createdAt: -1 })
       .limit(10)
@@ -555,45 +572,106 @@ export const getComprehensiveLeadAnalytics = async () => {
     }
   });
 
-  // Format recent activities from real database records
-  const leadActivities = recentLeads.map(lead => {
-    let activityType = 'new_lead';
-    let message = `New lead: ${lead.studentName || 'Unknown'}`;
-    let value = '—';
+  // Format recent activities from AuditLog business events and Incentives
+  const auditActivities = recentAuditLogs.map(log => {
+    // Map AuditLog action to activity type
+    const activityTypeMap = {
+      'LEAD_CREATED': 'new_lead',
+      'LEAD_UPDATED': 'status_updated',
+      'LEAD_DELETED': 'status_updated',
+      'EMPLOYEE_CREATED': 'employee_created',
+    };
 
-    if (lead.leadStatus === 'won') {
-      activityType = 'lead_converted';
-      message = `${lead.studentName || 'Unknown'} converted to customer`;
-      value = '₹1,000';
-    } else if (lead.assignedTo) {
-      activityType = 'lead_assigned';
-      message = `${lead.studentName || 'Unknown'} assigned to ${lead.assignedTo}`;
-    } else if (lead.leadStatus !== 'new') {
-      activityType = 'status_updated';
-      message = `${lead.studentName || 'Unknown'} status updated to ${lead.leadStatus}`;
+    const activityType = activityTypeMap[log.action] || 'status_updated';
+
+    // Build message from AuditLog data - business-friendly format for dashboard
+    let message = '';
+
+    if (log.action === 'LEAD_UPDATED' && log.newValue && log.newValue.leadStatus) {
+      // Try to get studentName from AuditLog first, then from recentLeads by entityId
+      let studentName = log.newValue.studentName || log.oldValue?.studentName;
+      if (!studentName && log.entityId) {
+        const lead = recentLeads.find(l => l._id.toString() === log.entityId.toString());
+        if (lead) {
+          studentName = lead.studentName;
+        }
+      }
+      studentName = studentName || 'Lead';
+      const status = log.newValue.leadStatus.charAt(0).toUpperCase() + log.newValue.leadStatus.slice(1);
+      message = `${studentName}'s lead status changed to ${status}`;
+    } else if (log.action === 'EMPLOYEE_CREATED') {
+      const employeeName = log.targetEmployee?.firstName && log.targetEmployee?.lastName
+        ? `${log.targetEmployee.firstName} ${log.targetEmployee.lastName}`
+        : log.newValue?.firstName && log.newValue?.lastName
+        ? `${log.newValue.firstName} ${log.newValue.lastName}`
+        : null;
+      message = employeeName ? `New employee added: ${employeeName}` : 'New employee added';
+    } else if (log.action === 'LEAD_CREATED') {
+      const studentName = log.newValue?.studentName || 'New lead';
+      message = `New lead: ${studentName}`;
+    } else {
+      message = log.description || `${log.action.replace(/_/g, ' ').toLowerCase()}`;
+    }
+
+    // Extract value from newValue if it contains amount
+    let value = null;
+    if (log.newValue && typeof log.newValue === 'object') {
+      if (log.newValue.amount) {
+        value = `₹${log.newValue.amount}`;
+      }
     }
 
     return {
-      id: `lead-${lead._id?.toString()}`,
+      id: `audit-${log._id?.toString()}`,
       type: activityType,
       message,
-      value,
-      timestamp: lead.updatedAt || lead.createdAt,
+      value: value || null,
+      timestamp: log.createdAt,
     };
   });
 
+  // Format incentive activities from recent Incentives
   const incentiveActivities = recentIncentives.map(incentive => {
+    let activityType = 'incentive_earned';
+    let message = '';
+    const employeeName = incentive.employeeName || 'Unknown';
+    const incentiveType = incentive.incentiveType || 'incentive';
+
+    // Map message based on incentive status
+    switch (incentive.status) {
+      case 'pending':
+        message = `${employeeName} was awarded ${incentiveType}`;
+        break;
+      case 'processing':
+        message = `${incentiveType} for ${employeeName} is being processed`;
+        break;
+      case 'approved':
+        message = `${employeeName} earned ${incentiveType}`;
+        break;
+      case 'rejected':
+        message = `${incentiveType} for ${employeeName} was rejected`;
+        break;
+      default:
+        message = `${employeeName} was awarded ${incentiveType}`;
+    }
+
+    // Show amount for any status if amount exists
+    let value = null;
+    if (incentive.amount) {
+      value = `₹${incentive.amount}`;
+    }
+
     return {
       id: `incentive-${incentive._id?.toString()}`,
-      type: 'incentive_earned',
-      message: `${incentive.employeeName || 'Unknown'} earned ${incentive.incentiveType || 'incentive'}`,
-      value: `₹${incentive.amount || 0}`,
+      type: activityType,
+      message,
+      value: value || null,
       timestamp: incentive.createdAt,
     };
   });
 
   // Combine and sort all activities by timestamp descending
-  const allActivities = [...leadActivities, ...incentiveActivities]
+  const allActivities = [...auditActivities, ...incentiveActivities]
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     .slice(0, 5);
 

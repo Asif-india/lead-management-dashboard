@@ -63,14 +63,14 @@ import {
   tableMutedCellSx,
   tableRowSx
 } from '../constants/formStyles'
-import { usersApi } from '../services/api'
+import { usersApi, clearCacheEntry } from '../services/api'
 import { ROLES, ROLE_LABELS } from '../utils/roleHelper'
 import { useAuth } from '../context/AuthContext'
 
 const MotionTableRow = motion(TableRow)
 
 const Users = () => {
-  const { user: currentUser } = useAuth()
+  const { user: currentUser, loading: authLoading } = useAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -173,13 +173,15 @@ const Users = () => {
   }, [pagination.page, pagination.limit, debouncedSearchQuery, filterRole, filterStatus])
 
   useEffect(() => {
+    if (authLoading) return
+
     isMountedRef.current = true
     fetchUsers()
-    
+
     return () => {
       isMountedRef.current = false
     }
-  }, [fetchUsers])
+  }, [fetchUsers, authLoading])
 
   const handleMenuClick = (event, user) => {
     setAnchorEl(event.currentTarget)
@@ -271,6 +273,7 @@ const Users = () => {
     try {
       await usersApi.changeRole(selectedUser._id, newRole)
       setChangeRoleModalOpen(false)
+      clearCacheEntry('/users', 'GET')
       fetchUsers()
       setSuccessMessage('Role changed successfully')
       setShowSuccess(true)
@@ -294,6 +297,7 @@ const Users = () => {
     try {
       await usersApi.updateStatus(selectedUser._id, newStatus)
       setChangeStatusModalOpen(false)
+      clearCacheEntry('/users', 'GET')
       fetchUsers()
       setSuccessMessage('Account status updated successfully')
       setShowSuccess(true)
@@ -316,6 +320,7 @@ const Users = () => {
     try {
       await usersApi.changeEmail(selectedUser._id, newEmail)
       setChangeEmailModalOpen(false)
+      clearCacheEntry('/users', 'GET')
       fetchUsers()
       setSuccessMessage('Email changed successfully')
       setShowSuccess(true)
@@ -399,6 +404,7 @@ const Users = () => {
         role: ROLES.EMPLOYEE,
         phone: ''
       })
+      clearCacheEntry('/users', 'GET')
       fetchUsers()
       setSuccessMessage('User created successfully')
       setShowSuccess(true)
