@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -48,6 +48,14 @@ const MainLayout = () => {
   )
 
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const mobileOpenRef = useRef(false)
+
+  // Use ref to persist mobile open state across StrictMode re-renders
+  const getMobileOpen = () => mobileOpenRef.current
+  const setMobileOpen = (value) => {
+    mobileOpenRef.current = value
+    setIsMobileOpen(value)
+  }
 
   // Auto-collapse sidebar on tablet
   useEffect(() => {
@@ -58,10 +66,10 @@ const MainLayout = () => {
 
   // Close mobile menu when route changes
   useEffect(() => {
-    if (isMobileOpen) {
-      setIsMobileOpen(false)
+    if (getMobileOpen()) {
+      setMobileOpen(false)
     }
-  }, [location.pathname, isMobileOpen])
+  }, [location.pathname])
 
   // Memoize sidebar props for performance
   const sidebarProps = useMemo(() => ({
@@ -70,8 +78,8 @@ const MainLayout = () => {
     isMobile,
     isTablet,
     isLargeScreen,
-    isMobileOpen,
-    setIsMobileOpen
+    isMobileOpen: getMobileOpen(),
+    setIsMobileOpen: setMobileOpen
   }), [isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScreen, isMobileOpen])
 
   // Memoize navbar props for performance
@@ -79,7 +87,8 @@ const MainLayout = () => {
     isMobile,
     isTablet,
     isLargeScreen,
-    isCollapsed
+    isCollapsed,
+    setIsMobileOpen: setMobileOpen
   }), [isMobile, isTablet, isLargeScreen, isCollapsed])
 
   const mainContentVariants = {
@@ -210,14 +219,14 @@ const MainLayout = () => {
 
       {/* Mobile Background Overlay */}
       <AnimatePresence>
-        {isMobile && isMobileOpen && (
+        {isMobile && getMobileOpen() && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
-            onClick={() => setIsMobileOpen(false)}
+            onClick={() => setMobileOpen(false)}
           />
         )}
       </AnimatePresence>

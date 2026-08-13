@@ -41,7 +41,9 @@ export const AnalyticsProvider = ({ children }) => {
 
   useEffect(() => {
     // Wait until AuthContext finishes loading
-    if (authLoading) return
+    if (authLoading) {
+      return
+    }
 
     // Don't call analytics API if user is not logged in
     if (!token) {

@@ -231,6 +231,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                   <Link
                     to={item.path}
                     onClick={() => isMobile && setIsMobileOpen(false)}
+                    aria-label={item.name}
+                    title={isCollapsed && !isMobile ? item.name : ''}
                     className={`
                       relative flex items-center px-4 py-3 rounded-xl transition-all duration-300 group
                       ${isActive
@@ -276,15 +278,16 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                     </div>
 
                     {/* Tooltip for collapsed state */}
-                    {isCollapsed && (
+                    {isCollapsed && !isMobile && (
                       <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         whileHover={{ opacity: 1, x: 0 }}
-                        className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-sm rounded-lg shadow-lg whitespace-nowrap pointer-events-none z-50"
+                        transition={{ duration: 0.2 }}
+                        className="absolute left-full ml-3 px-3 py-2 bg-popover text-popover-foreground text-sm font-medium rounded-lg shadow-xl border border-border/20 whitespace-nowrap pointer-events-none z-50"
                       >
                         {item.name}
                         {item.badge && (
-                          <span className="ml-2 px-1 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
+                          <span className="ml-2 px-1.5 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
                             {item.badge}
                           </span>
                         )}

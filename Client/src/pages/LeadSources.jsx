@@ -164,11 +164,12 @@ const LeadSources = () => {
       setEditFormData({ name: '', description: '', status: 'active' })
       setError(null)
       clearCacheEntry('/lead-sources', 'GET')
+
       // Directly refetch instead of relying on useEffect
       const params = {
         page: 1,
         limit: pageSize,
-        search: searchTerm,
+        search: searchTerm || undefined,
         status: selectedStatus !== 'all' ? selectedStatus : undefined
       }
       const response = await leadSourcesApi.getList(params)

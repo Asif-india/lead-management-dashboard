@@ -304,7 +304,7 @@ const Employees = () => {
       value: statistics.totalEmployees?.toString() || '0',
       change: '+12%',
       trend: 'up',
-      icon: 'Users',
+      icon: Users,
       color: 'from-blue-500 to-cyan-600',
       description: 'Across all departments'
     },
@@ -313,7 +313,7 @@ const Employees = () => {
       value: statistics.statusDistribution?.find(s => s._id === 'active')?.count?.toString() || '0',
       change: '+5%',
       trend: 'up',
-      icon: 'UserCheck',
+      icon: UserCheck,
       color: 'from-green-500 to-emerald-600',
       description: 'Currently working'
     },
@@ -322,7 +322,7 @@ const Employees = () => {
       value: statistics.departmentDistribution?.length?.toString() || '0',
       change: '0',
       trend: 'neutral',
-      icon: 'Building2',
+      icon: Building2,
       color: 'from-purple-500 to-pink-600',
       description: 'Total departments'
     },
@@ -331,7 +331,7 @@ const Employees = () => {
       value: '86%',
       change: '+8%',
       trend: 'up',
-      icon: 'TrendingUp',
+      icon: TrendingUp,
       color: 'from-orange-500 to-red-600',
       description: 'Company average'
     }

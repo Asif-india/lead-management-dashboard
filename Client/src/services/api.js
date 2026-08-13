@@ -157,30 +157,32 @@ const makeRequest = async (url, options = {}, retryCount = 0) => {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    // Create request promise
-    const requestPromise = fetch(url, {
-      ...options,
-      signal: controller.signal,
-      headers
-    })
+    // Create full request promise (fetch + parse) for deduplication
+    const requestPromise = (async () => {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers
+      })
+      if (!response.ok) {
+        const data = await parseResponse(response)
+        await handleApiError(response, data)
+        throw new Error(`HTTP ${response.status}`)
+      }
+      return await parseResponse(response)
+    })()
 
     // Track active request
     if (options.method === 'GET') {
       activeRequests.set(cacheKey, requestPromise)
     }
 
-    const response = await requestPromise
-    const data = await parseResponse(response)
+    const data = await requestPromise
 
     // Clean up
     clearTimeout(timeoutId)
     if (options.method === 'GET') {
       activeRequests.delete(cacheKey)
-    }
-
-    // Handle error responses
-    if (!response.ok) {
-      await handleApiError(response, data)
     }
 
     // Cache successful GET requests (only if data is not empty)
