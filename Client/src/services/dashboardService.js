@@ -1,4 +1,4 @@
-import { analyticsApi } from './api'
+import { analyticsApi, leadsApi } from './api'
 import { formatCurrency } from '../utils/currencyFormatter'
 import { formatRelativeTime } from '../utils/timeFormatter'
 import {
@@ -57,11 +57,13 @@ const ACTIVITY_COLORS = {
 /**
  * Map backend API response to frontend dashboard structure
  * Central mapping layer for all dashboard data transformations
- * 
+ *
  * @param {Object} apiData - Raw backend API response
+ * @param {Array} leadsData - Raw leads data for accurate conversion rate calculation
+ * @param {Object} incentivesData - Incentives analytics data for total payout
  * @returns {Object} Mapped dashboard data
  */
-const mapDashboardResponse = (apiData) => {
+const mapDashboardResponse = (apiData, leadsData = [], incentivesData = null) => {
   const data = apiData?.data || apiData
 
   // Map KPI Stats
@@ -98,7 +100,7 @@ const mapDashboardResponse = (apiData) => {
     },
     {
       title: 'Total Incentives',
-      value: formatCurrency(data.totalIncentives || 0),
+      value: formatCurrency(incentivesData?.totalPayout || 0),
       change: '+0%',
       trend: 'up',
       icon: Award,
@@ -120,21 +122,67 @@ const mapDashboardResponse = (apiData) => {
 
   // Map Lead Sources Data (Pie Chart)
   // Backend: source, leads, conversion, revenue, cost
-  // Frontend: name, value, color
-  const leadSourcesData = (data.leadSourceAnalytics || []).map((item, index) => ({
-    name: item.source || 'Unknown',
-    value: item.leads,
-    color: LEAD_SOURCE_COLORS[index % LEAD_SOURCE_COLORS.length]
-  }))
+  // Frontend: name, value (percentage), color, rawCount
+  const totalLeads = (data.leadSourceAnalytics || []).reduce((sum, item) => sum + (item.leads || 0), 0)
+  const leadSourcesData = (data.leadSourceAnalytics || []).map((item, index) => {
+    const sourceLeads = item.leads || 0
+    const percentage = totalLeads > 0 ? (sourceLeads / totalLeads) * 100 : 0
+    return {
+      name: item.source || 'Unknown',
+      value: percentage,
+      rawCount: sourceLeads,
+      color: LEAD_SOURCE_COLORS[index % LEAD_SOURCE_COLORS.length]
+    }
+  }).sort((a, b) => {
+    // Sort by percentage descending, then by name for deterministic order
+    if (b.value !== a.value) {
+      return b.value - a.value
+    }
+    return a.name.localeCompare(b.name)
+  })
 
   // Map Conversion Rate Data
-  // Backend: source, leads, conversion, revenue, cost
-  // Frontend: channel, rate, leads
-  const conversionRateData = (data.leadSourceAnalytics || []).map(item => ({
-    channel: item.source || 'Unknown',
-    conversionRate: item.conversion || 0,
-    totalLeads: item.leads || 0
-  }))
+  // Calculate actual conversion rate per source from real leads data
+  // Frontend: channel, rate (2 decimal places), leads, convertedLeads
+  const conversionRateData = (() => {
+    // Group leads by source and count total/converted
+    const sourceStats = new Map()
+
+    leadsData.forEach(lead => {
+      const source = lead.source || 'Unknown'
+      const status = lead.status || lead.leadStatus || ''
+
+      if (!sourceStats.has(source)) {
+        sourceStats.set(source, { total: 0, converted: 0 })
+      }
+
+      const stats = sourceStats.get(source)
+      stats.total++
+
+      // Count as converted if status is 'converted' or 'won'
+      if (status.toLowerCase() === 'converted' || status.toLowerCase() === 'won') {
+        stats.converted++
+      }
+    })
+
+    // Calculate conversion rate per source
+    return (data.leadSourceAnalytics || []).map(item => {
+      const source = item.source || 'Unknown'
+      const stats = sourceStats.get(source) || { total: 0, converted: 0 }
+      const totalLeads = stats.total
+      const convertedLeads = stats.converted
+
+      // Calculate conversion rate: (converted / total) * 100
+      const rate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0
+
+      return {
+        channel: source,
+        conversionRate: Number(rate.toFixed(2)),
+        totalLeads: totalLeads,
+        convertedLeads: convertedLeads
+      }
+    })
+  })()
 
   // Map Recent Activities
   const recentActivity = (data.recentActivities || []).map((item, index) => {
@@ -173,7 +221,25 @@ const mapDashboardResponse = (apiData) => {
       earnings: formatCurrency(earnings),
       trend: item.targetAchievement >= 100 ? 'up' : 'down'
     }
-  })
+  }).sort((a, b) => {
+    // Sort by: 1) conversions (desc), 2) conversion rate (desc), 3) leads (desc), 4) earnings (desc)
+    if (b.conversions !== a.conversions) {
+      return b.conversions - a.conversions
+    }
+    if (b.conversionRate !== a.conversionRate) {
+      return b.conversionRate - a.conversionRate
+    }
+    if (b.leads !== a.leads) {
+      return b.leads - a.leads
+    }
+    // Sort by earnings as final tiebreaker (parse numeric value from formatted string)
+    const earningsA = parseFloat(a.earnings.replace(/[^\d.-]/g, '')) || 0
+    const earningsB = parseFloat(b.earnings.replace(/[^\d.-]/g, '')) || 0
+    return earningsB - earningsA
+  }).map((performer, index) => ({
+    ...performer,
+    rank: index + 1
+  }))
 
   return {
     kpiStats,
@@ -202,7 +268,29 @@ const mapDashboardResponse = (apiData) => {
 export const fetchDashboardData = async () => {
   try {
     const response = await analyticsApi.getComprehensive()
-    return mapDashboardResponse(response)
+
+    // Fetch incentives analytics for Total Incentives KPI
+    let incentivesData = null
+    try {
+      const { incentivesApi } = await import('./api')
+      const incentivesResponse = await incentivesApi.getAnalytics()
+      incentivesData = incentivesResponse?.data || null
+    } catch (incentivesError) {
+      console.warn('Failed to fetch incentives analytics:', incentivesError)
+      // Continue with analytics data if incentives fetch fails
+    }
+
+    // Fetch leads data to calculate accurate conversion rates per source
+    let leadsData = []
+    try {
+      const leadsResponse = await leadsApi.getList()
+      leadsData = Array.isArray(leadsResponse) ? leadsResponse : (leadsResponse?.data?.data || leadsResponse?.data || [])
+    } catch (leadsError) {
+      console.warn('Failed to fetch leads for conversion rate calculation:', leadsError)
+      // Continue with analytics data if leads fetch fails
+    }
+
+    return mapDashboardResponse(response, leadsData, incentivesData)
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
     throw error

@@ -245,7 +245,7 @@ const SaasDashboard = () => {
                   <span className="text-sm text-muted-foreground">{source.name}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-medium text-foreground">{source.value}%</span>
+                  <span className="text-sm font-medium text-foreground">{Number(source.value).toFixed(2)}%</span>
                 </div>
               </div>
             ))}
@@ -334,6 +334,7 @@ const SaasDashboard = () => {
                   conversionRate={performer.conversionRate}
                   earnings={performer.earnings}
                   trend={performer.trend}
+                  rank={performer.rank}
                   delay={index * 0.1}
                 />
               )

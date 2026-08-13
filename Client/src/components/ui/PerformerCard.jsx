@@ -18,21 +18,30 @@ import { ArrowUp, ArrowDown } from 'lucide-react'
  * @param {number} props.conversionRate - Conversion rate percentage
  * @param {string} props.earnings - Earnings string (e.g., "$8,500")
  * @param {'up' | 'down'} props.trend - Performance trend direction
+ * @param {number} props.rank - Ranking position (1, 2, 3, etc.)
  * @param {number} props.delay - Animation delay in seconds (default: 0)
  */
 const PerformerCard = ({
   avatarGradient,
   avatar,
   name,
-  leads,
-  conversions,
-  conversionRate,
-  earnings,
-  trend,
+  leads = 0,
+  conversions = 0,
+  conversionRate = 0,
+  earnings = '₹0',
+  trend = 'up',
+  rank = 0,
   delay = 0,
 }) => {
   const MotionDiv = motion.div
   const TrendIcon = trend === 'up' ? ArrowUp : ArrowDown
+
+  // Singular/plural helpers
+  const leadsLabel = leads === 1 ? 'lead' : 'leads'
+  const convertedLabel = conversions === 1 ? 'converted' : 'converted'
+
+  // Handle zero leads case for conversion rate
+  const displayRate = leads > 0 ? conversionRate : 0
 
   return (
     <MotionDiv
@@ -41,29 +50,34 @@ const PerformerCard = ({
       transition={{ delay, duration: 0.3 }}
       className="flex items-center space-x-4 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
     >
+      {/* Ranking Indicator */}
+      {rank > 0 && (
+        <div className="w-6 h-6 flex items-center justify-center">
+          <span className="text-muted-foreground text-xs font-semibold">#{rank}</span>
+        </div>
+      )}
+
       {/* Avatar */}
-      <div className={`w-12 h-12 bg-gradient-to-br ${avatarGradient} rounded-full flex items-center justify-center`}>
+      <div className={`w-12 h-12 bg-gradient-to-br ${avatarGradient} rounded-full flex items-center justify-center flex-shrink-0`}>
         <span className="text-white font-bold text-sm">{avatar}</span>
       </div>
 
       {/* Content */}
-      <div className="flex-1">
-        <p className="text-foreground font-medium">{name}</p>
-        <div className="flex items-center space-x-4 mt-1">
-          <span className="text-muted-foreground text-xs">{leads} leads</span>
-          <span className="text-green-400 text-xs">{conversions} converted</span>
-          <span className="text-blue-400 text-xs">{conversionRate}% rate</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-foreground font-medium truncate">{name}</p>
+        <div className="flex items-center space-x-3 mt-1 text-xs">
+          <span className="text-muted-foreground">{leads} {leadsLabel}</span>
+          <span className="text-muted-foreground">•</span>
+          <span className={conversions > 0 ? 'text-green-400' : 'text-muted-foreground'}>{conversions} {convertedLabel}</span>
+          <span className="text-muted-foreground">•</span>
+          <span className={displayRate > 0 ? 'text-blue-400' : 'text-muted-foreground'}>{displayRate}% rate</span>
         </div>
       </div>
 
       {/* Earnings and Trend */}
-      <div className="text-right">
+      <div className="text-right flex-shrink-0">
         <p className="text-green-400 font-semibold">{earnings}</p>
-        <div className={`flex items-center text-xs ${
-          trend === 'up' ? 'text-green-400' : 'text-red-400'
-        }`}>
-          <TrendIcon className="w-3 h-3" />
-        </div>
+        <p className="text-muted-foreground text-xs">Incentive</p>
       </div>
     </MotionDiv>
   )
