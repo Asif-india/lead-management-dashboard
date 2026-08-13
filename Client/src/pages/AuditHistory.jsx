@@ -283,22 +283,22 @@ const AuditHistory = () => {
                 <table className="w-full table-fixed">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="w-[17%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[16%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Date & Time
                       </th>
-                      <th className="w-[14%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[13%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         User
                       </th>
-                      <th className="w-[12%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[16%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Action
                       </th>
-                      <th className="w-[8%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Module
                       </th>
-                      <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[14%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Record
                       </th>
-                      <th className="w-[25%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[21%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Description
                       </th>
                       <th className="w-[12%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -419,7 +419,7 @@ const AuditHistory = () => {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Record ID</label>
-                <p className="text-foreground mt-1 font-mono text-xs">{selectedAuditLog.entityId || '—'}</p>
+                <p className="text-foreground mt-1 font-mono text-xs break-all">{selectedAuditLog.entityId || '—'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Description</label>
@@ -441,7 +441,7 @@ const AuditHistory = () => {
                   {selectedAuditLog.oldValue && (
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Before</label>
-                      <pre className="mt-1 p-3 bg-muted/50 rounded-lg text-xs overflow-auto max-h-40 text-foreground">
+                      <pre className="mt-1 p-3 bg-muted/50 rounded-lg text-xs overflow-auto max-h-40 text-foreground whitespace-pre-wrap break-all">
                         {formatAuditValue(selectedAuditLog.oldValue)}
                       </pre>
                     </div>
@@ -449,7 +449,7 @@ const AuditHistory = () => {
                   {selectedAuditLog.newValue && (
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">After</label>
-                      <pre className="mt-1 p-3 bg-muted/50 rounded-lg text-xs overflow-auto max-h-40 text-foreground">
+                      <pre className="mt-1 p-3 bg-muted/50 rounded-lg text-xs overflow-auto max-h-40 text-foreground whitespace-pre-wrap break-all">
                         {formatAuditValue(selectedAuditLog.newValue)}
                       </pre>
                     </div>

@@ -55,6 +55,11 @@ const userSchema = new mongoose.Schema(
     },
 
     // Account Status
+    accountStatus: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended', 'terminated'],
+      default: 'active',
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -91,6 +96,7 @@ const userSchema = new mongoose.Schema(
 // Indexes for better query performance
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
+userSchema.index({ accountStatus: 1 });
 
 // Virtual for full name
 userSchema.virtual('fullName').get(function () {
@@ -111,6 +117,19 @@ userSchema.pre('save', async function (next) {
   } catch (error) {
     next(error);
   }
+});
+
+// Pre-save middleware to sync isActive with accountStatus
+userSchema.pre('save', function (next) {
+  // Sync isActive based on accountStatus for backward compatibility
+  if (this.isModified('accountStatus')) {
+    this.isActive = this.accountStatus === 'active';
+  }
+  // If isActive is being set directly, sync accountStatus
+  else if (this.isModified('isActive') && !this.isModified('accountStatus')) {
+    this.accountStatus = this.isActive ? 'active' : 'inactive';
+  }
+  next();
 });
 
 // Instance method to check password

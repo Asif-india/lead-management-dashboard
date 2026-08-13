@@ -6,6 +6,7 @@
 import { asyncHandler } from '../utils/index.js';
 import { sendSuccess } from '../utils/responseFormatter.js';
 import User from '../models/User.js';
+import { logAccountStatusChanged } from '../services/auditLogService.js';
 
 /**
  * @route   GET /api/v1/users
@@ -24,7 +25,7 @@ export const getAllUsersHandler = asyncHandler(async (req, res) => {
 
   // Account status filter
   if (accountStatus) {
-    query.isActive = accountStatus === 'active';
+    query.accountStatus = accountStatus;
   }
 
   // Search filter (name or email)
@@ -72,18 +73,15 @@ export const updateUserAccountStatusHandler = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { accountStatus } = req.body;
 
-  const statusMap = {
-    active: true,
-    inactive: false,
-    suspended: false,
-    terminated: false,
-  };
+  const validStatuses = ['active', 'inactive', 'suspended', 'terminated'];
+  if (!validStatuses.includes(accountStatus)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid account status. Must be one of: active, inactive, suspended, terminated',
+    });
+  }
 
-  const user = await User.findByIdAndUpdate(
-    id,
-    { isActive: statusMap[accountStatus] || false },
-    { new: true, runValidators: true }
-  ).select('-password');
+  const user = await User.findById(id).select('-password');
 
   if (!user) {
     return res.status(404).json({
@@ -91,6 +89,13 @@ export const updateUserAccountStatusHandler = asyncHandler(async (req, res) => {
       message: 'User not found',
     });
   }
+
+  const oldStatus = user.accountStatus;
+  user.accountStatus = accountStatus;
+  await user.save({ runValidators: true });
+
+  // Log the status change
+  await logAccountStatusChanged(req.user.id, id, oldStatus, accountStatus);
 
   sendSuccess(res, user, 'Account status updated successfully');
 });
@@ -150,7 +155,7 @@ export const changeUserRoleHandler = asyncHandler(async (req, res) => {
  * @access  Private (Admin)
  */
 export const createUserHandler = asyncHandler(async (req, res) => {
-  const { firstName, lastName, email, password, role, phone } = req.body;
+  const { firstName, lastName, email, password, role, phone, accountStatus } = req.body;
 
   const user = await User.create({
     firstName,
@@ -159,7 +164,7 @@ export const createUserHandler = asyncHandler(async (req, res) => {
     password,
     role: role || 'employee',
     phone,
-    isActive: true,
+    accountStatus: accountStatus || 'active',
   });
 
   sendSuccess(

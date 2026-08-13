@@ -336,3 +336,19 @@ export const logIncentiveCreated = async (performedBy, targetIncentive, targetUs
     description: `${additionalData.employeeName || 'Unknown'} earned ${additionalData.incentiveType || 'incentive'}`,
   });
 };
+
+/**
+ * Helper: Log account status change
+ */
+export const logAccountStatusChanged = async (performedBy, targetUser, oldValue, newValue) => {
+  return createAuditLog({
+    action: 'USER_STATUS_CHANGED',
+    performedBy,
+    targetUser,
+    entityType: 'User',
+    entityId: targetUser,
+    oldValue: { accountStatus: oldValue },
+    newValue: { accountStatus: newValue },
+    description: `User account status changed from ${oldValue} to ${newValue}`,
+  });
+};

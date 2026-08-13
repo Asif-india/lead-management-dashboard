@@ -25,8 +25,10 @@
 export const formatRole = (role) => {
   const roleMap = {
     'admin': 'Admin',
+    'administrator': 'Admin',
     'manager': 'Manager',
-    'employee': 'Employee'
+    'employee': 'Employee',
+    'sales_executive': 'Employee'
   }
 
   return roleMap[role] || role

@@ -43,8 +43,15 @@ export const login = async (email, password) => {
     throw new AppError('Invalid email or password', HTTP_STATUS.UNAUTHORIZED);
   }
 
-  if (!user.isActive) {
-    throw new AppError('Your account has been deactivated', HTTP_STATUS.FORBIDDEN);
+  // Check account status
+  if (user.accountStatus === 'inactive') {
+    throw new AppError('Your account is inactive. Please contact an administrator.', HTTP_STATUS.FORBIDDEN);
+  }
+  if (user.accountStatus === 'suspended') {
+    throw new AppError('Your account has been suspended. Please contact an administrator.', HTTP_STATUS.FORBIDDEN);
+  }
+  if (user.accountStatus === 'terminated') {
+    throw new AppError('Your account has been terminated. Please contact an administrator.', HTTP_STATUS.FORBIDDEN);
   }
 
   // Update last login

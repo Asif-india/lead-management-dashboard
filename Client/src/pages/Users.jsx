@@ -64,7 +64,7 @@ import {
   tableRowSx
 } from '../constants/formStyles'
 import { usersApi, clearCacheEntry } from '../services/api'
-import { ROLES, ROLE_LABELS } from '../utils/roleHelper'
+import { ROLES, ROLE_LABELS, formatRole } from '../utils/roleHelper'
 import { useAuth } from '../context/AuthContext'
 
 const MotionTableRow = motion(TableRow)
@@ -80,7 +80,7 @@ const Users = () => {
   const [error, setError] = useState(null)
   const [users, setUsers] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 })
-  
+
   // Modal states
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [addUserModalOpen, setAddUserModalOpen] = useState(false)
@@ -91,7 +91,7 @@ const Users = () => {
   const [auditHistoryModalOpen, setAuditHistoryModalOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
-  
+
   // Form states
   const [newRole, setNewRole] = useState('')
   const [newStatus, setNewStatus] = useState('')
@@ -234,14 +234,14 @@ const Users = () => {
 
   const fetchAuditLogs = async (page = 1) => {
     if (!selectedUser?._id) return
-    
+
     try {
       setAuditLoading(true)
       setAuditError('')
       const response = await usersApi.getUserAuditLogs(selectedUser._id, { page, limit: 10 })
       const logs = response?.data || []
       const pagination = response?.pagination || { page: 1, limit: 10, total: 0 }
-      
+
       if (isMountedRef.current) {
         setAuditLogs(logs)
         setAuditPagination(pagination)
@@ -286,8 +286,8 @@ const Users = () => {
   }
 
   const handleConfirmStatusChange = async () => {
-    if (selectedUser._id === currentUser?._id && 
-        (newStatus === 'inactive' || newStatus === 'suspended' || newStatus === 'terminated')) {
+    if (selectedUser._id === currentUser?._id &&
+      (newStatus === 'inactive' || newStatus === 'suspended' || newStatus === 'terminated')) {
       setFormError('You cannot deactivate, suspend, or terminate your own account')
       return
     }
@@ -426,6 +426,19 @@ const Users = () => {
     return colors[status] || colors.inactive
   }
 
+  const getAccountStatus = (user) => {
+    if (user.accountStatus) {
+      return user.accountStatus.charAt(0).toUpperCase() + user.accountStatus.slice(1)
+    }
+    if (user.isActive === true) return 'Active'
+    if (user.isActive === false) return 'Inactive'
+    return 'N/A'
+  }
+
+  const getAccountStatusValue = (user) => {
+    return user.accountStatus || (user.isActive ? 'active' : 'inactive')
+  }
+
   const formatAuditValue = (value) => {
     if (!value) return '—'
     if (typeof value === 'object') {
@@ -452,18 +465,18 @@ const Users = () => {
 
   const formatDate = (date) => {
     if (!date) return 'N/A'
-    return new Date(date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     })
   }
 
   const formatDateTime = (date) => {
     if (!date) return 'N/A'
-    return new Date(date).toLocaleString('en-US', { 
+    return new Date(date).toLocaleString('en-US', {
       year: 'numeric',
-      month: 'short', 
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -589,7 +602,7 @@ const Users = () => {
             </TableHead>
             <TableBody>
               {users.map((user, index) => {
-                const statusColor = getStatusColor(user.accountStatus)
+                const statusColor = getStatusColor(getAccountStatusValue(user))
                 const roleColor = getRoleColor(user.role)
                 const fullName = getFullName(user)
                 const initials = getInitials(user.firstName, user.lastName)
@@ -622,7 +635,7 @@ const Users = () => {
                     </TableCell>
                     <TableCell sx={tableBodyCellSx}>
                       <Chip
-                        label={ROLE_LABELS[user.role] || user.role}
+                        label={formatRole(user.role)}
                         size="small"
                         sx={{
                           backgroundColor: roleColor.bg,
@@ -635,7 +648,7 @@ const Users = () => {
                     </TableCell>
                     <TableCell sx={tableBodyCellSx}>
                       <Chip
-                        label={user.accountStatus || 'N/A'}
+                        label={getAccountStatus(user)}
                         size="small"
                         sx={{
                           backgroundColor: statusColor.bg,
@@ -777,11 +790,11 @@ const Users = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Role:</span>
-                    <span>{ROLE_LABELS[selectedUser.role] || selectedUser.role}</span>
+                    <span>{formatRole(selectedUser.role)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Account Status:</span>
-                    <span>{selectedUser.accountStatus || 'N/A'}</span>
+                    <span>{getAccountStatus(selectedUser)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Email Verified:</span>
@@ -849,8 +862,8 @@ const Users = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setChangeRoleModalOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleConfirmRoleChange} 
+          <Button
+            onClick={handleConfirmRoleChange}
             variant="contained"
             disabled={submitting}
           >
@@ -896,8 +909,8 @@ const Users = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setChangeStatusModalOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleConfirmStatusChange} 
+          <Button
+            onClick={handleConfirmStatusChange}
             variant="contained"
             disabled={submitting}
             color={newStatus === 'terminated' ? 'error' : 'primary'}
@@ -939,8 +952,8 @@ const Users = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setChangeEmailModalOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleConfirmEmailChange} 
+          <Button
+            onClick={handleConfirmEmailChange}
             variant="contained"
             disabled={submitting}
           >
@@ -986,8 +999,8 @@ const Users = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setResetPasswordModalOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleConfirmPasswordReset} 
+          <Button
+            onClick={handleConfirmPasswordReset}
             variant="contained"
             disabled={submitting}
           >
@@ -1073,8 +1086,8 @@ const Users = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddUserModalOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleCreateUser} 
+          <Button
+            onClick={handleCreateUser}
             variant="contained"
             disabled={submitting}
           >
@@ -1105,9 +1118,9 @@ const Users = () => {
                     <div key={log._id} className="border rounded-lg p-4 bg-muted/50">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="outlined" 
-                            sx={{ 
+                          <Badge
+                            variant="outlined"
+                            sx={{
                               fontSize: '0.75rem',
                               textTransform: 'capitalize'
                             }}
@@ -1119,7 +1132,7 @@ const Users = () => {
                           </Typography>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Performed By:</span>
@@ -1127,13 +1140,13 @@ const Users = () => {
                             {log.performedBy ? `${log.performedBy.firstName} ${log.performedBy.lastName}` : 'System'}
                           </span>
                         </div>
-                        
+
                         {log.description && (
                           <div className="text-muted-foreground text-xs">
                             {log.description}
                           </div>
                         )}
-                        
+
                         {(log.oldValue || log.newValue) && (
                           <div className="grid grid-cols-2 gap-2 text-xs mt-2">
                             {log.oldValue && (
@@ -1154,7 +1167,7 @@ const Users = () => {
                             )}
                           </div>
                         )}
-                        
+
                         {log.ipAddress && (
                           <div className="text-xs text-muted-foreground">
                             IP: {log.ipAddress}
@@ -1164,7 +1177,7 @@ const Users = () => {
                     </div>
                   ))}
                 </div>
-                
+
                 {auditPagination.total > auditPagination.limit && (
                   <div className="flex justify-between items-center pt-4 border-t">
                     <Typography variant="caption" className="text-muted-foreground">
