@@ -42,7 +42,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
   // Get role-based menu items
   const userRole = user?.role?.toLowerCase() || 'sales_executive'
   const roleMenuItems = getMenuItemsForRole(userRole)
-  
+
   // Convert menu items to use icon map
   const menuItems = roleMenuItems.map(item => ({
     ...item,
@@ -70,6 +70,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
       }
     },
     mobile: {
+      width: '280px',
       x: isMobileOpen ? 0 : -280,
       transition: {
         duration: 0.3,
@@ -139,7 +140,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
           border-b backdrop-blur-sm
           ${isMobile ? 'p-4' : isTablet ? 'p-3' : isLargeScreen ? 'p-8' : 'p-6'}
         `}
-        style={{ borderColor: 'hsl(var(--border) / 0.1)' }}
+          style={{ borderColor: 'hsl(var(--border) / 0.1)' }}
         >
           <div className="flex items-center justify-between">
             <motion.div
@@ -234,7 +235,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                     to={item.path}
                     onClick={() => isMobile && setIsMobileOpen(false)}
                     aria-label={item.name}
-                    title={isCollapsed && !isMobile ? item.name : ''}
+                    title={(!isMobile && isCollapsed) ? item.name : ''}
                     className={`
                       relative flex items-center px-4 py-3 rounded-xl transition-all duration-300 group
                       ${isActive
@@ -270,9 +271,9 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                           {item.badge && (
                             <span className="px-2 py-1 text-xs font-semibold bg-blue-600 dark:bg-white/10 text-white dark:text-white rounded-full">
                               {item.badge === 'totalLeads' ? totalLeads || 0 :
-                               item.badge === 'pendingIncentives' ? pendingIncentives || 0 :
-                               item.badge === 'approvedIncentives' ? (approvedIncentives || 0) :
-                               item.badge}
+                                item.badge === 'pendingIncentives' ? pendingIncentives || 0 :
+                                  item.badge === 'approvedIncentives' ? (approvedIncentives || 0) :
+                                    item.badge}
                             </span>
                           )}
                         </motion.div>
@@ -280,7 +281,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                     </div>
 
                     {/* Tooltip for collapsed state */}
-                    {isCollapsed && !isMobile && (
+                    {!isMobile && isCollapsed && (
                       <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         whileHover={{ opacity: 1, x: 0 }}
