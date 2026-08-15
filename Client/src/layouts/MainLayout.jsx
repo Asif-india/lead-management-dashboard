@@ -57,6 +57,9 @@ const MainLayout = () => {
     setIsMobileOpen(value)
   }
 
+  // Effective collapsed state: mobile always expanded, desktop uses persisted value
+  const effectiveIsCollapsed = isMobile ? false : isCollapsed
+
   // Auto-collapse sidebar on tablet
   useEffect(() => {
     if (isTablet) {
@@ -73,23 +76,23 @@ const MainLayout = () => {
 
   // Memoize sidebar props for performance
   const sidebarProps = useMemo(() => ({
-    isCollapsed,
+    isCollapsed: effectiveIsCollapsed,
     setIsCollapsed,
     isMobile,
     isTablet,
     isLargeScreen,
     isMobileOpen: getMobileOpen(),
     setIsMobileOpen: setMobileOpen
-  }), [isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScreen, isMobileOpen])
+  }), [effectiveIsCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScreen, isMobileOpen])
 
   // Memoize navbar props for performance
   const navbarProps = useMemo(() => ({
     isMobile,
     isTablet,
     isLargeScreen,
-    isCollapsed,
+    isCollapsed: effectiveIsCollapsed,
     setIsMobileOpen: setMobileOpen
-  }), [isMobile, isTablet, isLargeScreen, isCollapsed])
+  }), [isMobile, isTablet, isLargeScreen, effectiveIsCollapsed])
 
   const mainContentVariants = {
     expanded: {
@@ -165,7 +168,7 @@ const MainLayout = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-5" />
       {/* Sidebar */}
       <Sidebar
-        isCollapsed={isCollapsed}
+        isCollapsed={effectiveIsCollapsed}
         setIsCollapsed={setIsCollapsed}
         isMobile={isMobile}
         isTablet={isTablet}
@@ -180,13 +183,13 @@ const MainLayout = () => {
         isTablet={isTablet}
         isLargeScreen={isLargeScreen}
         setIsMobileOpen={setIsMobileOpen}
-        isCollapsed={isCollapsed}
+        isCollapsed={effectiveIsCollapsed}
       />
 
       {/* Main Content */}
       <motion.main
         variants={mainContentVariants}
-        animate={isMobile ? 'mobile' : isCollapsed ? 'collapsed' : 'expanded'}
+        animate={isMobile ? 'mobile' : effectiveIsCollapsed ? 'collapsed' : 'expanded'}
         className="h-screen overflow-y-auto relative z-10"
       >
         <AnimatePresence mode="wait">
