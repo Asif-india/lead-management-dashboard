@@ -12,6 +12,8 @@ import {
   changeUserPasswordHandler,
   changeUserRoleHandler,
   changeUserEmailHandler,
+  promoteToAdministratorHandler,
+  deleteUserHandler,
 } from '../controllers/index.js';
 import { protect, restrictTo } from '../middleware/index.js';
 import { validateQuery } from '../middleware/index.js';
@@ -79,6 +81,18 @@ router.patch(
 );
 
 /**
+ * @route   POST /api/v1/users/:id/promote
+ * @desc    Promote user to Administrator (Admin only)
+ * @access  Private (Admin)
+ */
+router.post(
+  '/:id/promote',
+  protect,
+  restrictTo('administrator'),
+  promoteToAdministratorHandler
+);
+
+/**
  * @route   PATCH /api/v1/users/:id/email
  * @desc    Change user email (Admin only)
  * @access  Private (Admin)
@@ -88,6 +102,18 @@ router.patch(
   protect,
   restrictTo('administrator'),
   changeUserEmailHandler
+);
+
+/**
+ * @route   DELETE /api/v1/users/:id
+ * @desc    Delete a user (Admin only)
+ * @access  Private (Admin)
+ */
+router.delete(
+  '/:id',
+  protect,
+  restrictTo('administrator'),
+  deleteUserHandler
 );
 
 export default router;

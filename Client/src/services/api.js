@@ -503,9 +503,11 @@ export const usersApi = {
   create: (data) => apiService.post('/users', data),
   getUserAuditLogs: (userId, params) => apiService.get(`/audit-logs/user/${userId}`, params),
   changeRole: (userId, role) => apiService.patch(`/users/${userId}/role`, { role }),
+  promoteToAdministrator: (userId) => apiService.post(`/users/${userId}/promote`),
   updateStatus: (userId, status) => apiService.patch(`/users/${userId}/status`, { accountStatus: status }),
   changeEmail: (userId, email) => apiService.patch(`/users/${userId}/email`, { email }),
-  changePassword: (userId, password) => apiService.patch(`/users/${userId}/password`, { password })
+  changePassword: (userId, password) => apiService.patch(`/users/${userId}/password`, { password }),
+  deleteUser: (userId) => apiService.delete(`/users/${userId}`)
 }
 
 export const leadSourcesApi = {

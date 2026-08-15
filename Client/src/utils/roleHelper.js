@@ -57,7 +57,7 @@ export const getInitials = (name) => {
  * Matches backend USER_ROLES in server/src/constants/index.js
  */
 export const ROLES = {
-  ADMIN: 'admin',
+  ADMIN: 'administrator',
   MANAGER: 'manager',
   EMPLOYEE: 'employee'
 }
@@ -66,7 +66,7 @@ export const ROLES = {
  * Role display labels for UI
  */
 export const ROLE_LABELS = {
-  admin: 'Admin',
+  administrator: 'Admin',
   manager: 'Manager',
   employee: 'Employee'
 

@@ -40,7 +40,7 @@ export const LEAD_PRIORITY = {
 
 // User Roles
 export const USER_ROLES = {
-  ADMIN: 'admin',
+  ADMIN: 'administrator',
   MANAGER: 'manager',
   EMPLOYEE: 'employee',
 };

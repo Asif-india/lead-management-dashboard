@@ -28,7 +28,7 @@ const router = express.Router();
 router.post(
   '/',
   protect,
-  restrictTo('admin', 'manager'),
+  restrictTo('administrator', 'manager'),
   validateBody(createEmployeeSchema),
   createEmployeeHandler
 );
@@ -98,7 +98,7 @@ router.patch(
 router.patch(
   '/:id/status',
   protect,
-  restrictTo('admin', 'manager'),
+  restrictTo('administrator', 'manager'),
   updateEmployeeStatusHandler
 );
 
@@ -110,7 +110,7 @@ router.patch(
 router.delete(
   '/:id',
   protect,
-  restrictTo('admin'),
+  restrictTo('administrator'),
   deleteEmployeeHandler
 );
 

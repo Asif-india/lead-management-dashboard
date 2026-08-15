@@ -16,8 +16,10 @@ import {
   CheckCircle,
   XCircle,
   UserCheck,
+  UserCog,
   History,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react'
 import {
   Table,
@@ -63,7 +65,7 @@ import {
   tableMutedCellSx,
   tableRowSx
 } from '../constants/formStyles'
-import { usersApi, clearCacheEntry } from '../services/api'
+import { usersApi, employeesApi, clearCacheEntry } from '../services/api'
 import { ROLES, ROLE_LABELS, formatRole } from '../utils/roleHelper'
 import { useAuth } from '../context/AuthContext'
 
@@ -81,6 +83,10 @@ const Users = () => {
   const [users, setUsers] = useState([])
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 })
 
+  // Employee linking state
+  const [employees, setEmployees] = useState([])
+  const [employeesLoading, setEmployeesLoading] = useState(false)
+
   // Modal states
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [addUserModalOpen, setAddUserModalOpen] = useState(false)
@@ -89,6 +95,8 @@ const Users = () => {
   const [changeEmailModalOpen, setChangeEmailModalOpen] = useState(false)
   const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false)
   const [auditHistoryModalOpen, setAuditHistoryModalOpen] = useState(false)
+  const [promoteModalOpen, setPromoteModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -100,6 +108,7 @@ const Users = () => {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [formError, setFormError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [roleChangeEmployeeId, setRoleChangeEmployeeId] = useState('')
 
   // Add User form state
   const [addUserFormData, setAddUserFormData] = useState({
@@ -109,7 +118,8 @@ const Users = () => {
     password: '',
     confirmPassword: '',
     role: ROLES.EMPLOYEE,
-    phone: ''
+    phone: '',
+    employeeId: ''
   })
 
   // Audit log states
@@ -123,6 +133,31 @@ const Users = () => {
 
   // Track if component is mounted to prevent state updates after unmount
   const isMountedRef = React.useRef(true)
+
+  // Fetch employees for linking
+  const fetchEmployees = React.useCallback(async () => {
+    try {
+      setEmployeesLoading(true)
+      const response = await employeesApi.getList()
+      const allEmployees = response?.data || []
+
+      // Filter out employees that are already linked to users
+      const unlinkedEmployees = allEmployees.filter(emp => !emp.userId)
+
+      if (isMountedRef.current) {
+        setEmployees(unlinkedEmployees)
+      }
+    } catch (err) {
+      console.error('Error fetching employees:', err)
+      if (isMountedRef.current) {
+        setEmployees([])
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setEmployeesLoading(false)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -156,7 +191,6 @@ const Users = () => {
     } catch (err) {
       // Ignore AbortError from intentional cancellation (component unmount or timeout)
       if (err.name === 'AbortError') {
-        console.log('Request cancelled (component unmount or timeout)')
         return
       }
       // Only set error if component is still mounted
@@ -177,11 +211,12 @@ const Users = () => {
 
     isMountedRef.current = true
     fetchUsers()
+    fetchEmployees()
 
     return () => {
       isMountedRef.current = false
     }
-  }, [fetchUsers, authLoading])
+  }, [fetchUsers, authLoading, fetchEmployees])
 
   const handleMenuClick = (event, user) => {
     setAnchorEl(event.currentTarget)
@@ -205,6 +240,29 @@ const Users = () => {
     setNewRole(selectedUser.role)
     setChangeRoleModalOpen(true)
     setAnchorEl(null)
+  }
+
+  const handlePromoteToAdministrator = () => {
+    setPromoteModalOpen(true)
+    setAnchorEl(null)
+  }
+
+  const handleConfirmPromote = async () => {
+    setFormError('')
+    setSubmitting(true)
+    try {
+      await usersApi.promoteToAdministrator(selectedUser._id)
+      setPromoteModalOpen(false)
+      clearCacheEntry('/users', 'GET')
+      fetchUsers()
+      setSuccessMessage('User promoted to Administrator successfully')
+      setShowSuccess(true)
+    } catch (err) {
+      console.error('Error promoting user:', err)
+      setFormError(err.response?.data?.message || 'Failed to promote user')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleChangeStatus = () => {
@@ -232,6 +290,31 @@ const Users = () => {
     await fetchAuditLogs()
   }
 
+  const handleDeleteUser = () => {
+    setDeleteModalOpen(true)
+    setAnchorEl(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    setFormError('')
+    setSubmitting(true)
+    try {
+      await usersApi.deleteUser(selectedUser._id)
+      setDeleteModalOpen(false)
+      clearCacheEntry('/users', 'GET')
+      clearCacheEntry('/employees', 'GET')
+      fetchUsers()
+      fetchEmployees()
+      setSuccessMessage('User deleted successfully')
+      setShowSuccess(true)
+    } catch (err) {
+      console.error('Error deleting user:', err)
+      setFormError(err.response?.data?.message || 'Failed to delete user')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const fetchAuditLogs = async (page = 1) => {
     if (!selectedUser?._id) return
 
@@ -248,7 +331,6 @@ const Users = () => {
       }
     } catch (err) {
       if (err.name === 'AbortError') {
-        console.log('Audit log request cancelled')
         return
       }
       if (isMountedRef.current) {
@@ -263,15 +345,13 @@ const Users = () => {
   }
 
   const handleConfirmRoleChange = async () => {
-    if (selectedUser._id === currentUser?._id && newRole !== ROLES.ADMIN) {
-      setFormError('You cannot remove your own admin role')
-      return
-    }
+    const currentRole = selectedUser.role
+    const targetRole = newRole
 
     setFormError('')
     setSubmitting(true)
     try {
-      await usersApi.changeRole(selectedUser._id, newRole)
+      await usersApi.changeRole(selectedUser._id, targetRole)
       setChangeRoleModalOpen(false)
       clearCacheEntry('/users', 'GET')
       fetchUsers()
@@ -361,11 +441,28 @@ const Users = () => {
   }
 
   const handleCreateUser = async () => {
-    const { firstName, lastName, email, password, confirmPassword, role, phone } = addUserFormData
+    const { firstName, lastName, email, password, confirmPassword, role, phone, employeeId } = addUserFormData
 
-    if (!firstName || !lastName || !email || !password) {
-      setFormError('All required fields must be filled')
-      return
+    // For Admin, validate all fields manually
+    if (role === ROLES.ADMIN) {
+      if (!firstName || !lastName || !email || !password) {
+        setFormError('All required fields must be filled')
+        return
+      }
+      if (!email.includes('@')) {
+        setFormError('Please enter a valid email address')
+        return
+      }
+    } else {
+      // For Manager/Employee, only validate password and employee selection
+      if (!employeeId) {
+        setFormError('Employee selection is required for Manager and Employee roles')
+        return
+      }
+      if (!password) {
+        setFormError('Password is required')
+        return
+      }
     }
 
     if (password.length < 8) {
@@ -378,11 +475,6 @@ const Users = () => {
       return
     }
 
-    if (!email.includes('@')) {
-      setFormError('Please enter a valid email address')
-      return
-    }
-
     setFormError('')
     setSubmitting(true)
     try {
@@ -392,7 +484,8 @@ const Users = () => {
         email,
         password,
         role,
-        phone
+        phone,
+        employeeId: role === ROLES.ADMIN ? undefined : employeeId
       })
       setAddUserModalOpen(false)
       setAddUserFormData({
@@ -402,10 +495,13 @@ const Users = () => {
         password: '',
         confirmPassword: '',
         role: ROLES.EMPLOYEE,
-        phone: ''
+        phone: '',
+        employeeId: ''
       })
       clearCacheEntry('/users', 'GET')
+      clearCacheEntry('/employees', 'GET')
       fetchUsers()
+      fetchEmployees()
       setSuccessMessage('User created successfully')
       setShowSuccess(true)
     } catch (err) {
@@ -733,10 +829,18 @@ const Users = () => {
           <Eye className="w-4 h-4 mr-2" />
           View User
         </MenuItem>
-        <MenuItem onClick={handleChangeRole} sx={menuItemSx}>
-          <Shield className="w-4 h-4 mr-2" />
-          Change Role
-        </MenuItem>
+        {selectedUser && selectedUser.role !== ROLES.ADMIN && (
+          <MenuItem onClick={handlePromoteToAdministrator} sx={menuItemSx}>
+            <Shield className="w-4 h-4 mr-2" />
+            Promote to Administrator
+          </MenuItem>
+        )}
+        {selectedUser && selectedUser.role !== ROLES.ADMIN && (
+          <MenuItem onClick={handleChangeRole} sx={menuItemSx}>
+            <UserCog className="w-4 h-4 mr-2" />
+            Change Role
+          </MenuItem>
+        )}
         <MenuItem onClick={handleChangeEmail} sx={menuItemSx}>
           <MailIcon className="w-4 h-4 mr-2" />
           Change Email
@@ -753,6 +857,12 @@ const Users = () => {
           <History className="w-4 h-4 mr-2" />
           View Audit History
         </MenuItem>
+        {selectedUser && selectedUser._id !== currentUser?._id && (
+          <MenuItem onClick={handleDeleteUser} sx={{ ...menuItemSx, color: '#ef4444' }}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete User
+          </MenuItem>
+        )}
       </Menu>
 
       {/* View User Modal */}
@@ -837,37 +947,114 @@ const Users = () => {
               <DialogContentText>
                 Change role for <strong>{getFullName(selectedUser)}</strong>
               </DialogContentText>
-              <FormControl fullWidth>
-                <InputLabel sx={inputLabelSx}>New Role</InputLabel>
-                <Select
-                  value={newRole}
-                  label="New Role"
-                  onChange={(e) => setNewRole(e.target.value)}
-                  sx={selectSx}
-                >
-                  <MenuItem value={ROLES.ADMIN}>{ROLE_LABELS[ROLES.ADMIN]}</MenuItem>
-                  <MenuItem value={ROLES.MANAGER}>{ROLE_LABELS[ROLES.MANAGER]}</MenuItem>
-                  <MenuItem value={ROLES.EMPLOYEE}>{ROLE_LABELS[ROLES.EMPLOYEE]}</MenuItem>
-                </Select>
-              </FormControl>
+              {selectedUser.role === ROLES.ADMIN ? (
+                <Alert severity="info">
+                  Administrator role cannot be changed through normal role change. Use the "Promote to Administrator" action for other users.
+                </Alert>
+              ) : (
+                <FormControl fullWidth>
+                  <InputLabel sx={inputLabelSx}>New Role</InputLabel>
+                  <Select
+                    value={newRole}
+                    label="New Role"
+                    onChange={(e) => setNewRole(e.target.value)}
+                    sx={selectSx}
+                  >
+                    {selectedUser.role === ROLES.MANAGER && (
+                      <MenuItem value={ROLES.EMPLOYEE}>{ROLE_LABELS[ROLES.EMPLOYEE]}</MenuItem>
+                    )}
+                    {selectedUser.role === ROLES.EMPLOYEE && (
+                      <MenuItem value={ROLES.MANAGER}>{ROLE_LABELS[ROLES.MANAGER]}</MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+              )}
               {formError && (
                 <Alert severity="error">{formError}</Alert>
               )}
-              <DialogContentText className="text-sm text-muted-foreground">
-                <AlertTriangle className="w-4 h-4 inline mr-1" />
-                Changing role will affect the user's permissions immediately.
-              </DialogContentText>
+              {selectedUser.role !== ROLES.ADMIN && (
+                <DialogContentText className="text-sm text-muted-foreground">
+                  <AlertTriangle className="w-4 h-4 inline mr-1" />
+                  Changing role will affect the user's permissions immediately.
+                </DialogContentText>
+              )}
             </div>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setChangeRoleModalOpen(false)}>Cancel</Button>
+          {selectedUser && selectedUser.role !== ROLES.ADMIN && (
+            <Button
+              onClick={handleConfirmRoleChange}
+              variant="contained"
+              disabled={submitting}
+            >
+              {submitting ? 'Changing...' : 'Change Role'}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Promote to Administrator Modal */}
+      <Dialog open={promoteModalOpen} onClose={() => setPromoteModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle className="text-foreground">Promote to Administrator</DialogTitle>
+        <DialogContent>
+          {selectedUser && (
+            <div className="space-y-4 mt-4">
+              <DialogContentText>
+                Are you sure you want to promote <strong>{getFullName(selectedUser)}</strong> to Administrator?
+              </DialogContentText>
+              <Alert severity="warning">
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Administrator grants full system-level access. This action cannot be undone through the normal role change flow.
+              </Alert>
+              {formError && (
+                <Alert severity="error">{formError}</Alert>
+              )}
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPromoteModalOpen(false)}>Cancel</Button>
           <Button
-            onClick={handleConfirmRoleChange}
+            onClick={handleConfirmPromote}
             variant="contained"
+            color="warning"
             disabled={submitting}
           >
-            {submitting ? 'Changing...' : 'Change Role'}
+            {submitting ? 'Promoting...' : 'Promote to Administrator'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete User Modal */}
+      <Dialog open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle className="text-foreground">Delete User</DialogTitle>
+        <DialogContent>
+          {selectedUser && (
+            <div className="space-y-4 mt-4">
+              <DialogContentText>
+                Are you sure you want to delete <strong>{getFullName(selectedUser)}</strong> ({selectedUser.email})?
+              </DialogContentText>
+              <Alert severity="warning">
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                This action will permanently delete the user account. The linked Employee record will remain but will be unlinked.
+              </Alert>
+              {formError && (
+                <Alert severity="error">{formError}</Alert>
+              )}
+            </div>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteModalOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmDelete}
+            variant="contained"
+            color="error"
+            disabled={submitting}
+          >
+            {submitting ? 'Deleting...' : 'Delete User'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1017,41 +1204,89 @@ const Users = () => {
             <DialogContentText>
               Create a new user account with appropriate role and permissions.
             </DialogContentText>
-            <TextField
-              fullWidth
-              label="First Name"
-              value={addUserFormData.firstName}
-              onChange={(e) => setAddUserFormData({ ...addUserFormData, firstName: e.target.value })}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              label="Last Name"
-              value={addUserFormData.lastName}
-              onChange={(e) => setAddUserFormData({ ...addUserFormData, lastName: e.target.value })}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={addUserFormData.email}
-              onChange={(e) => setAddUserFormData({ ...addUserFormData, email: e.target.value })}
-              sx={textFieldSx}
-            />
-            <TextField
-              fullWidth
-              label="Phone (Optional)"
-              value={addUserFormData.phone}
-              onChange={(e) => setAddUserFormData({ ...addUserFormData, phone: e.target.value })}
-              sx={textFieldSx}
-            />
+            {addUserFormData.role === ROLES.ADMIN && (
+              <>
+                <TextField
+                  fullWidth
+                  label="First Name"
+                  value={addUserFormData.firstName}
+                  onChange={(e) => setAddUserFormData({ ...addUserFormData, firstName: e.target.value })}
+                  sx={textFieldSx}
+                />
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  value={addUserFormData.lastName}
+                  onChange={(e) => setAddUserFormData({ ...addUserFormData, lastName: e.target.value })}
+                  sx={textFieldSx}
+                />
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  value={addUserFormData.email}
+                  onChange={(e) => setAddUserFormData({ ...addUserFormData, email: e.target.value })}
+                  sx={textFieldSx}
+                />
+                <TextField
+                  fullWidth
+                  label="Phone (Optional)"
+                  value={addUserFormData.phone}
+                  onChange={(e) => setAddUserFormData({ ...addUserFormData, phone: e.target.value })}
+                  sx={textFieldSx}
+                />
+              </>
+            )}
+            {addUserFormData.role !== ROLES.ADMIN && addUserFormData.employeeId && (
+              <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
+                <p className="text-sm font-medium text-foreground">Employee Details (Auto-populated)</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Name:</span>
+                    <span className="ml-2">{addUserFormData.firstName} {addUserFormData.lastName}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <span className="ml-2">{addUserFormData.email}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span className="ml-2">{addUserFormData.phone || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
             <FormControl fullWidth>
               <InputLabel sx={inputLabelSx}>Role</InputLabel>
               <Select
                 value={addUserFormData.role}
                 label="Role"
-                onChange={(e) => setAddUserFormData({ ...addUserFormData, role: e.target.value })}
+                onChange={(e) => {
+                  const newRole = e.target.value
+                  // Reset employee selection and form fields when role changes to Admin
+                  if (newRole === ROLES.ADMIN) {
+                    setAddUserFormData({
+                      ...addUserFormData,
+                      role: newRole,
+                      employeeId: '',
+                      firstName: '',
+                      lastName: '',
+                      email: '',
+                      phone: ''
+                    })
+                  } else {
+                    // Clear employee selection when switching to Manager/Employee
+                    setAddUserFormData({
+                      ...addUserFormData,
+                      role: newRole,
+                      employeeId: '',
+                      firstName: '',
+                      lastName: '',
+                      email: '',
+                      phone: ''
+                    })
+                  }
+                }}
                 sx={selectSx}
               >
                 <MenuItem value={ROLES.ADMIN}>{ROLE_LABELS[ROLES.ADMIN]}</MenuItem>
@@ -1059,6 +1294,46 @@ const Users = () => {
                 <MenuItem value={ROLES.EMPLOYEE}>{ROLE_LABELS[ROLES.EMPLOYEE]}</MenuItem>
               </Select>
             </FormControl>
+            {addUserFormData.role !== ROLES.ADMIN && (
+              <FormControl fullWidth>
+                <InputLabel sx={inputLabelSx}>Employee *</InputLabel>
+                <Select
+                  value={addUserFormData.employeeId}
+                  label="Employee *"
+                  onChange={(e) => {
+                    const selectedEmployeeId = e.target.value
+                    const selectedEmployee = employees.find(emp => emp._id === selectedEmployeeId)
+                    if (selectedEmployee) {
+                      // Auto-populate employee details
+                      setAddUserFormData({
+                        ...addUserFormData,
+                        employeeId: selectedEmployeeId,
+                        firstName: selectedEmployee.firstName,
+                        lastName: selectedEmployee.lastName,
+                        email: selectedEmployee.email,
+                        phone: selectedEmployee.phone
+                      })
+                    } else {
+                      setAddUserFormData({ ...addUserFormData, employeeId: selectedEmployeeId })
+                    }
+                  }}
+                  sx={selectSx}
+                  disabled={employeesLoading}
+                >
+                  {employeesLoading ? (
+                    <MenuItem disabled>Loading employees...</MenuItem>
+                  ) : employees.length === 0 ? (
+                    <MenuItem disabled>No available employees</MenuItem>
+                  ) : (
+                    employees.map((emp) => (
+                      <MenuItem key={emp._id} value={emp._id}>
+                        {emp.firstName} {emp.lastName} — {emp.employeeId}
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
+            )}
             <TextField
               fullWidth
               label="Password"

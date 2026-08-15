@@ -229,7 +229,7 @@ const Navbar = ({ isMobile, isTablet, isLargeScreen, setIsMobileOpen, isCollapse
               whileHover={{ scale: 1.05, y: -1 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleTheme}
-              className={"flex items-center justify-center rounded-xl bg-muted backdrop-blur-sm text-muted-foreground hover:bg-muted/80 transition-all duration-200 shadow-lg hover:shadow-xl " + (isMobile ? 'hidden' : isTablet ? 'hidden sm:flex' : 'hidden sm:flex') + " " + (isTablet ? 'w-8 h-8' : 'w-10 h-10')}
+              className={"flex items-center justify-center rounded-xl bg-muted backdrop-blur-sm text-muted-foreground hover:bg-muted/80 transition-all duration-200 shadow-lg hover:shadow-xl " + (isTablet ? 'hidden sm:flex' : 'flex') + " " + (isTablet ? 'w-8 h-8' : 'w-10 h-10')}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </motion.button>

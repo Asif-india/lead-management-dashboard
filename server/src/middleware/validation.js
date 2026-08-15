@@ -24,10 +24,6 @@ export const validateBody = (schema) => {
         message: detail.message,
       }));
 
-      console.log('Validation Error Details:', errors);
-      console.log('Received Body:', req.body);
-      console.log('Validated Value:', value);
-
       return next(new AppError('Validation failed', HTTP_STATUS.UNPROCESSABLE_ENTITY, true, '', errors));
     }
 

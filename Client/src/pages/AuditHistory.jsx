@@ -280,28 +280,28 @@ const AuditHistory = () => {
             {/* Table */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full table-fixed">
+                <table className="w-full" style={{ minWidth: '1000px' }}>
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="w-[16%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ minWidth: '170px' }}>
                         Date & Time
                       </th>
-                      <th className="w-[13%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ minWidth: '150px' }}>
                         User
                       </th>
-                      <th className="w-[16%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ minWidth: '150px' }}>
                         Action
                       </th>
-                      <th className="w-[10%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ minWidth: '100px' }}>
                         Module
                       </th>
-                      <th className="w-[14%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ minWidth: '140px' }}>
                         Record
                       </th>
-                      <th className="w-[21%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ minWidth: '200px' }}>
                         Description
                       </th>
-                      <th className="w-[12%] px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ minWidth: '120px' }}>
                         Actions
                       </th>
                     </tr>

@@ -681,6 +681,7 @@ const Employees = () => {
                       <TableCell sx={tableHeaderCellSx}>Department</TableCell>
                       <TableCell sx={tableHeaderCellSx}>Position</TableCell>
                       <TableCell sx={tableHeaderCellSx}>Status</TableCell>
+                      <TableCell sx={tableHeaderCellSx}>User Account</TableCell>
                       <TableCell sx={tableHeaderCellSx}>Performance</TableCell>
                       <TableCell sx={tableHeaderCellSx}>Salary</TableCell>
                       <TableCell sx={tableHeaderCellSx}>Actions</TableCell>
@@ -734,6 +735,20 @@ const Employees = () => {
                                 fontWeight: 500
                               }}
                             />
+                          </TableCell>
+                          <TableCell sx={tableBodyCellSx}>
+                            {employee.userId ? (
+                              <div>
+                                <p className="text-foreground text-sm font-medium">
+                                  {employee.userId.firstName} {employee.userId.lastName}
+                                </p>
+                                <p className="text-muted-foreground text-xs capitalize">
+                                  {employee.userId.role}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Not Linked</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
