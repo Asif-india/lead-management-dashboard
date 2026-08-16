@@ -64,6 +64,13 @@ export const createIncentiveSchema = Joi.object({
       "any.required": "Amount is required",
     }),
 
+  incentiveDate: Joi.date()
+    .required()
+    .messages({
+      "date.base": "Incentive date must be a valid date",
+      "any.required": "Incentive date is required",
+    }),
+
   status: Joi.string()
     .optional()
     .valid("pending", "processing", "approved", "rejected")
@@ -188,6 +195,12 @@ export const updateIncentiveSchema = Joi.object({
       "number.min": "Amount cannot be negative",
     }),
 
+  incentiveDate: Joi.date()
+    .optional()
+    .messages({
+      "date.base": "Incentive date must be a valid date",
+    }),
+
   status: Joi.string()
     .optional()
     .valid("pending", "processing", "approved", "rejected")
@@ -292,6 +305,6 @@ export const incentiveQuerySchema = Joi.object({
   endDate: Joi.date().optional(),
   sortBy: Joi.string()
     .optional()
-    .valid("employeeName", "amount", "status", "createdAt", "department"),
+    .valid("employeeName", "amount", "status", "createdAt", "incentiveDate", "department"),
   sortOrder: Joi.string().optional().valid("asc", "desc").default("desc"),
 });

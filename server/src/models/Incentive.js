@@ -55,6 +55,11 @@ const incentiveSchema = new mongoose.Schema(
       },
     },
 
+    incentiveDate: {
+      type: Date,
+      required: [true, "Incentive date is required"],
+    },
+
     amount: {
       type: Number,
       required: [true, "Amount is required"],

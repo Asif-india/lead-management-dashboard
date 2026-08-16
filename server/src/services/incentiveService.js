@@ -53,12 +53,12 @@ export const getAllIncentives = async (query) => {
 
   // Date range filter
   if (startDate || endDate) {
-    filter.createdAt = {};
+    filter.incentiveDate = {};
     if (startDate) {
-      filter.createdAt.$gte = new Date(startDate);
+      filter.incentiveDate.$gte = new Date(startDate);
     }
     if (endDate) {
-      filter.createdAt.$lte = new Date(endDate);
+      filter.incentiveDate.$lte = new Date(endDate);
     }
   }
 
@@ -185,8 +185,8 @@ export const getMonthlyIncentiveTrends = async () => {
     {
       $group: {
         _id: {
-          year: { $year: '$createdAt' },
-          month: { $month: '$createdAt' },
+          year: { $year: '$incentiveDate' },
+          month: { $month: '$incentiveDate' },
         },
         total: { $sum: '$amount' },
         claimed: {
@@ -292,8 +292,8 @@ export const getEmployeeLeaderboard = async () => {
             $cond: [
               {
                 $and: [
-                  { $eq: [{ $month: '$createdAt' }, new Date().getMonth() + 1] },
-                  { $eq: [{ $year: '$createdAt' }, new Date().getFullYear()] },
+                  { $eq: [{ $month: '$incentiveDate' }, new Date().getMonth() + 1] },
+                  { $eq: [{ $year: '$incentiveDate' }, new Date().getFullYear()] },
                 ],
               },
               '$amount',

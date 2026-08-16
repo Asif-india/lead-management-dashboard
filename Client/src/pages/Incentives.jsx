@@ -116,7 +116,8 @@ const Incentives = () => {
     totalEarned: 0,
     currentMonth: 0,
     totalIncentives: 0,
-    badges: []
+    badges: [],
+    incentiveDate: new Date().toISOString().split('T')[0]
   })
   
   // Filter state
@@ -349,7 +350,8 @@ const Incentives = () => {
         totalEarned: selectedIncentive.totalEarned || 0,
         currentMonth: selectedIncentive.currentMonth || 0,
         totalIncentives: selectedIncentive.totalIncentives || 0,
-        badges: selectedIncentive.badges || []
+        badges: selectedIncentive.badges || [],
+        incentiveDate: selectedIncentive.incentiveDate ? new Date(selectedIncentive.incentiveDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
       })
       setEditModalOpen(true)
     }
@@ -383,7 +385,8 @@ const Incentives = () => {
       totalEarned: 0,
       currentMonth: 0,
       totalIncentives: 0,
-      badges: []
+      badges: [],
+      incentiveDate: new Date().toISOString().split('T')[0]
     })
   }
 
@@ -814,7 +817,7 @@ const Incentives = () => {
                         }}
                       />
                     </TableCell>
-                    <TableCell sx={tableMutedCellSx}>{new Date(incentive.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell sx={tableMutedCellSx}>{new Date(incentive.incentiveDate).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
@@ -944,6 +947,17 @@ const Incentives = () => {
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               sx={textFieldSx}
             />
+            <TextField
+              fullWidth
+              label="Incentive Date"
+              type="date"
+              value={formData.incentiveDate}
+              onChange={(e) => setFormData({ ...formData, incentiveDate: e.target.value })}
+              sx={textFieldSx}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
             <FormControl fullWidth sx={textFieldSx}>
               <InputLabel>Status</InputLabel>
               <Select
@@ -1046,6 +1060,17 @@ const Incentives = () => {
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               sx={textFieldSx}
             />
+            <TextField
+              fullWidth
+              label="Incentive Date"
+              type="date"
+              value={formData.incentiveDate}
+              onChange={(e) => setFormData({ ...formData, incentiveDate: e.target.value })}
+              sx={textFieldSx}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
             <FormControl fullWidth sx={textFieldSx}>
               <InputLabel>Status</InputLabel>
               <Select
@@ -1132,7 +1157,7 @@ const Incentives = () => {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Date</p>
-                  <p className="text-foreground font-medium">{new Date(selectedIncentive.createdAt).toLocaleDateString()}</p>
+                  <p className="text-foreground font-medium">{new Date(selectedIncentive.incentiveDate).toLocaleDateString()}</p>
                 </div>
               </div>
               {selectedIncentive.notes && (
