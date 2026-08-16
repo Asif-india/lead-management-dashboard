@@ -475,7 +475,7 @@ export const analyticsApi = {
   getDashboard: () => apiService.get(API_ENDPOINTS.ANALYTICS.DASHBOARD),
   getTrends: (params) => apiService.get(API_ENDPOINTS.ANALYTICS.TRENDS, params),
   getReports: (params) => apiService.get(API_ENDPOINTS.ANALYTICS.REPORTS, params),
-  getComprehensive: () => apiService.get('/analytics/comprehensive')
+  getComprehensive: () => apiService.get('/analytics/comprehensive', {}, { skipCache: true })
 }
 
 export const incentivesApi = {
@@ -536,12 +536,13 @@ export const clearCache = () => {
  * Clear specific cache entry and all parameterized variants
  */
 export const clearCacheEntry = (endpoint, method = 'GET') => {
-  // Clear the exact match
-  const cacheKey = `${method}:${endpoint}`
+  // Build full URL to match cache key format used by makeRequest
+  const fullUrl = API_CONFIG.baseURL + endpoint
+  const cacheKey = `${method}:${fullUrl}`
   requestCache.delete(cacheKey)
 
   // Clear all parameterized variants (e.g., /leads?page=1, /leads?search=test)
-  const matchingKeys = getMatchingCacheKeys(endpoint)
+  const matchingKeys = getMatchingCacheKeys(fullUrl)
   matchingKeys.forEach(key => {
     requestCache.delete(key)
   })

@@ -27,6 +27,6 @@ export const SUCCESS_SNACKBAR_DURATION = 5000
 
 /**
  * Form reset delay after successful submission (ms)
- * Must be greater than SUCCESS_SNACKBAR_DURATION to prevent race condition
+ * Short delay to ensure success message is briefly visible before navigation/reset
  */
-export const FORM_RESET_DELAY = 6000
+export const FORM_RESET_DELAY = 500

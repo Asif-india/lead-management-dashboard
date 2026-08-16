@@ -1,11 +1,12 @@
 /**
  * Centralized currency formatter for INR (Indian Rupee)
  * Uses Indian number formatting (e.g., ₹15,000, ₹1,50,000)
+ * Presentation-only formatter - does NOT apply exchange rate conversion
  */
 
 /**
  * Format a number as INR currency
- * @param {number} amount - The amount to format
+ * @param {number} amount - The amount to format (numeric value from database/API)
  * @param {Object} options - Intl.NumberFormat options
  * @returns {string} Formatted currency string (e.g., ₹15,000)
  */
@@ -25,7 +26,7 @@ export const formatCurrency = (amount, options = {}) => {
 
 /**
  * Format a number as INR with K suffix for thousands
- * @param {number} amount - The amount to format
+ * @param {number} amount - The amount to format (numeric value from database/API)
  * @returns {string} Formatted currency string with K suffix (e.g., ₹15K)
  */
 export const formatCurrencyCompact = (amount) => {

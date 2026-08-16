@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Users,
-  Search,
-  Plus,
-  MoreVertical,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
   TrendingUp,
-  Eye,
+  TrendingDown,
+  IndianRupee,
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
   Edit,
   Trash2,
-  UserCheck,
+  Eye,
+  X,
+  Briefcase,
+  GraduationCap,
+  Award,
+  MapPin,
+  Calendar,
+  Phone,
+  Mail,
   Building2,
-  Award
+  UserCheck
 } from 'lucide-react'
 import {
   Table,
@@ -58,6 +64,7 @@ import {
 } from '../constants/formStyles'
 import { employeesApi, clearCacheEntry } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 const Employees = () => {
   const { loading: authLoading } = useAuth()
@@ -485,7 +492,7 @@ const Employees = () => {
           
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Salary</span>
-            <span className="text-sm font-medium text-green-400">${employee.salary?.toLocaleString()}</span>
+            <span className="text-sm font-medium text-green-400">{formatCurrency(employee.salary)}</span>
           </div>
 
           <div className="flex justify-between items-center">
@@ -769,7 +776,7 @@ const Employees = () => {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell sx={tableBodyCellSx}>${employee.salary?.toLocaleString()}</TableCell>
+                          <TableCell sx={tableBodyCellSx}>{formatCurrency(employee.salary)}</TableCell>
                           <TableCell>
                             <IconButton
                               size="small"
@@ -1219,7 +1226,7 @@ const Employees = () => {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Salary</p>
-                  <p className="text-green-400 font-semibold">${selectedEmployee.salary?.toLocaleString()}</p>
+                  <p className="text-green-400 font-semibold">{formatCurrency(selectedEmployee.salary)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Location</p>

@@ -491,7 +491,7 @@ export const getComprehensiveLeadAnalytics = async () => {
       },
     },
     {
-      $sort: { count: -1 },
+      $sort: { conversion: -1, source: 1 },
     },
   ]);
 

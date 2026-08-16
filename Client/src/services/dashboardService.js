@@ -1,6 +1,6 @@
 import { analyticsApi, leadsApi } from './api'
-import { formatCurrency } from '../utils/currencyFormatter'
 import { formatRelativeTime } from '../utils/timeFormatter'
+import { formatCurrency } from '../utils/currencyFormatter'
 import {
   Users,
   CheckCircle,
@@ -219,6 +219,7 @@ const mapDashboardResponse = (apiData, leadsData = [], incentivesData = null) =>
       conversions: conversions,
       conversionRate: item.conversionRate,
       earnings: formatCurrency(earnings),
+      earningsRaw: earnings, // Keep raw value for sorting
       trend: item.targetAchievement >= 100 ? 'up' : 'down'
     }
   }).sort((a, b) => {
@@ -232,10 +233,8 @@ const mapDashboardResponse = (apiData, leadsData = [], incentivesData = null) =>
     if (b.leads !== a.leads) {
       return b.leads - a.leads
     }
-    // Sort by earnings as final tiebreaker (parse numeric value from formatted string)
-    const earningsA = parseFloat(a.earnings.replace(/[^\d.-]/g, '')) || 0
-    const earningsB = parseFloat(b.earnings.replace(/[^\d.-]/g, '')) || 0
-    return earningsB - earningsA
+    // Sort by earnings as final tiebreaker (use raw value)
+    return b.earningsRaw - a.earningsRaw
   }).map((performer, index) => ({
     ...performer,
     rank: index + 1

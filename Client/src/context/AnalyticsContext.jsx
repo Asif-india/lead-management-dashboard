@@ -39,6 +39,21 @@ export const AnalyticsProvider = ({ children }) => {
     topPerformers: []
   })
 
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const analyticsData = await fetchDashboardData()
+      setData(analyticsData)
+    } catch (err) {
+      console.error('Error fetching analytics data:', err)
+      setError('Failed to load analytics data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     // Wait until AuthContext finishes loading
     if (authLoading) {
@@ -51,22 +66,18 @@ export const AnalyticsProvider = ({ children }) => {
       return
     }
 
-    const fetchAnalytics = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+    fetchAnalytics()
 
-        const analyticsData = await fetchDashboardData()
-        setData(analyticsData)
-      } catch (err) {
-        console.error('Error fetching analytics data:', err)
-        setError('Failed to load analytics data')
-      } finally {
-        setLoading(false)
-      }
+    // Listen for analytics refresh events (triggered after lead mutations)
+    const handleRefresh = () => {
+      fetchAnalytics()
     }
 
-    fetchAnalytics()
+    window.addEventListener('analytics:refresh', handleRefresh)
+
+    return () => {
+      window.removeEventListener('analytics:refresh', handleRefresh)
+    }
   }, [token, authLoading])
 
   const value = {

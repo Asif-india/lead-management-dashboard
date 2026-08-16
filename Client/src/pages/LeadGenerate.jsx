@@ -78,48 +78,27 @@ const LeadGenerate = () => {
   const watchedCountry = watch('country')
   const watchedState = watch('state')
 
-  console.log('=== WATCH VALUES ===')
-  console.log('watchedCountry:', watchedCountry)
-  console.log('watchedState:', watchedState)
-  console.log('availableStates:', availableStates)
-  console.log('availableCities:', availableCities)
-
   useEffect(() => {
-    console.log('=== COUNTRY USE EFFECT ===')
-    console.log('watchedCountry changed to:', watchedCountry)
-
     if (watchedCountry) {
       const countryStates = states[watchedCountry] || []
-      console.log('countryStates from states[watchedCountry]:', countryStates)
-
       setAvailableStates(countryStates)
 
-      // ✅ Sirf New Lead me reset kare
       if (!editLeadId) {
         setAvailableCities([])
         setValue('state', '')
         setValue('city', '')
-        console.log('Cleared state and city (New Lead)')
       }
     } else {
       setAvailableStates([])
       setAvailableCities([])
-      console.log('Cleared availableStates and availableCities')
     }
   }, [watchedCountry, editLeadId, setValue])
 
   useEffect(() => {
-    console.log('=== STATE USE EFFECT ===')
-    console.log('watchedState changed to:', watchedState)
-
     if (watchedState) {
       const stateCities = cities[watchedState] || []
-
-      console.log('stateCities:', stateCities)
-
       setAvailableCities(stateCities)
 
-      // Only reset for NEW Lead
       if (!editLeadId) {
         setValue('city', '')
       }
@@ -134,20 +113,12 @@ const LeadGenerate = () => {
     const fetchLeadData = async () => {
       if (!editLeadId) return
 
-      console.log('=== FETCH LEAD DATA ===')
-      console.log('editLeadId:', editLeadId)
-
       try {
         setLoading(true)
         setError(null)
 
         const response = await leadsApi.getById(editLeadId)
         const leadData = response?.data || response
-
-        console.log('leadData from API:', leadData)
-        console.log('leadData.country:', leadData.country)
-        console.log('leadData.state:', leadData.state)
-        console.log('leadData.city:', leadData.city)
 
         // Map backend field names to form field names
         const formData = {
@@ -177,27 +148,14 @@ const LeadGenerate = () => {
           notes: leadData.notes || ''
         }
 
-        console.log('formData to reset with:', formData)
-        console.log('formData.country:', formData.country)
-        console.log('formData.state:', formData.state)
-        console.log('formData.city:', formData.city)
-
         reset(formData)
-
-        console.log('After reset - calling watch to check values')
-        console.log('watch country after reset:', watch('country'))
-        console.log('watch state after reset:', watch('state'))
-        console.log('watch city after reset:', watch('city'))
 
         // Set available states and cities based on country/state
         if (leadData.country) {
           const countryStates = states[leadData.country] || []
-          console.log('Setting availableStates from leadData.country:', countryStates)
           setAvailableStates(countryStates)
           if (leadData.state) {
             const stateCities = cities[leadData.state] || []
-            console.log('Setting availableCities from leadData.state:', stateCities)
-            console.log('cities[leadData.state] lookup result:', cities[leadData.state])
             setAvailableCities(stateCities)
           }
         }
@@ -227,14 +185,6 @@ const LeadGenerate = () => {
   }
 
   const onSubmit = async (data) => {
-
-    console.log("=== SUBMIT START ===")
-    console.log("RAW FORM DATA:", data)
-    console.log("employeeEmail:", data.employeeEmail)
-    console.log("employeePhone:", data.employeePhone)
-    console.log("employeeDepartment:", data.employeeDepartment)
-    console.log("collegeName:", data.collegeName)
-
     // Comprehensive validation - check if fields exist in data
     const missingFields = []
     if (!data.employeeEmail) missingFields.push('employeeEmail')
@@ -243,47 +193,40 @@ const LeadGenerate = () => {
     if (!data.collegeName) missingFields.push('collegeName')
 
     if (missingFields.length > 0) {
-      console.error("MISSING FIELDS:", missingFields)
-      console.error("Form data is incomplete. Please fill all required fields.")
+      console.error("Missing required fields:", missingFields)
       setError(`Missing required fields: ${missingFields.join(', ')}`)
       return
     }
 
     // Validate required fields before submission
     if (!data.state || data.state === '') {
-      console.log("VALIDATION FAILED: state is empty")
       setActiveStep(1)
       return
     }
 
     if (!data.city || data.city === '') {
-      console.log("VALIDATION FAILED: city is empty")
       setActiveStep(1)
       return
     }
 
     // Validate employee required fields
     if (!data.employeeEmail || data.employeeEmail === '') {
-      console.log("VALIDATION FAILED: employeeEmail is empty")
       setActiveStep(0)
       return
     }
 
     if (!data.employeePhone || data.employeePhone === '') {
-      console.log("VALIDATION FAILED: employeePhone is empty")
       setActiveStep(0)
       return
     }
 
     if (!data.employeeDepartment || data.employeeDepartment === '') {
-      console.log("VALIDATION FAILED: employeeDepartment is empty")
       setActiveStep(0)
       return
     }
 
     // Validate student required fields
     if (!data.collegeName || data.collegeName === '') {
-      console.log("VALIDATION FAILED: collegeName is empty")
       setActiveStep(2)
       return
     }
@@ -294,12 +237,11 @@ const LeadGenerate = () => {
       if (isEditMode) {
         await leadsApi.update(editLeadId, formattedData)
         clearCacheEntry('/leads', 'GET')
+        window.dispatchEvent(new Event('analytics:refresh'))
       } else {
-        // await leadsApi.create(data)
         const response = await leadsApi.create(data)
         clearCacheEntry('/leads', 'GET')
-
-        console.log("CREATE RESPONSE:", response)
+        window.dispatchEvent(new Event('analytics:refresh'))
       }
 
       setShowSuccess(true)
@@ -316,16 +258,7 @@ const LeadGenerate = () => {
     }
 
     catch (error) {
-      console.error('FULL ERROR:', error);
-      console.error('STATUS:', error.status);
-      console.error('MESSAGE:', error.message);
-      console.error('DETAILS:', error.details);
-
-      console.log("==============");
-      console.log(error);
-      console.log(error?.details);
-      console.log(JSON.stringify(error?.details, null, 2));
-      console.log("==============");
+      console.error('Error submitting lead:', error);
 
       if (error.status === 404) {
         setError(isEditMode ? 'Lead not found. It may have been deleted.' : 'Resource not found.')
@@ -604,10 +537,7 @@ const LeadGenerate = () => {
                           }
                         }}
                       >
-                        {availableCities.map((city) => {
-                          console.log("Rendering City:", city);
-
-                          return (
+                        {availableCities.map((city) => (
                             <MenuItem
                               key={city.code}
                               value={city.code}
@@ -615,8 +545,7 @@ const LeadGenerate = () => {
                             >
                               {city.name}
                             </MenuItem>
-                          );
-                        })}
+                          ))}
                       </Select>
                       {errors.city && (
                         <FormHelperText>{errors.city.message}</FormHelperText>

@@ -159,6 +159,7 @@ const Leads = () => {
       setDeleteConfirmOpen(false)
       setLeadToDelete(null)
       clearCacheEntry('/leads', 'GET')
+      window.dispatchEvent(new Event('analytics:refresh'))
 
       // Check if current page will be empty after deletion
       const isLastPage = currentPage === totalPages

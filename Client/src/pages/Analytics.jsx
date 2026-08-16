@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
+  Users,
   TrendingUp,
   TrendingDown,
-  Users,
-  DollarSign,
+  IndianRupee,
   Target,
   Globe,
   Award,
-  Calendar,
   Download,
   PieChart,
   UserCheck,
   Loader2,
   AlertCircle,
+  Calendar,
 } from 'lucide-react'
 import {
   LineChart,
@@ -36,49 +36,50 @@ import {
 } from 'recharts'
 import { containerVariants, itemVariants } from '../constants/formAnimations'
 import { analyticsApi } from '../services/api'
+import { formatCurrency } from '../utils/currencyFormatter'
 
 const Analytics = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [analyticsData, setAnalyticsData] = useState(null)
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await analyticsApi.getComprehensive()
-        
-        // Handle different response structures
-        let data = null
-        if (response?.data) {
-          data = response.data
-        } else if (response?.success && response?.data) {
-          data = response.data
-        } else if (typeof response === 'object' && response !== null) {
-          data = response
-        }
-        
-        setAnalyticsData(data)
-        
-        if (!data || typeof data !== 'object') {
-          setError('Invalid analytics data received from server')
-        }
-      } catch (err) {
-        console.error('Error fetching analytics:', err)
-        setError('Failed to load analytics data. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await analyticsApi.getComprehensive()
 
+      // Handle different response structures
+      let data = null
+      if (response?.data) {
+        data = response.data
+      } else if (response?.success && response?.data) {
+        data = response.data
+      } else if (typeof response === 'object' && response !== null) {
+        data = response
+      }
+
+      setAnalyticsData(data)
+
+      if (!data || typeof data !== 'object') {
+        setError('Invalid analytics data received from server')
+      }
+    } catch (err) {
+      console.error('Error fetching analytics:', err)
+      setError('Failed to load analytics data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchAnalytics()
   }, [])
 
   const iconMap = {
     Users,
     Target,
-    DollarSign,
+    IndianRupee,
     Globe
   }
 
@@ -181,10 +182,10 @@ const Analytics = () => {
     },
     {
       title: 'Revenue Generated',
-      value: `$${(wonLeads * 1000).toLocaleString()}`,
+      value: formatCurrency(wonLeads * 1000),
       change: '+18.7%',
       trend: 'up',
-      icon: 'DollarSign',
+      icon: 'IndianRupee',
       color: 'from-purple-500 to-pink-600',
       description: 'Total revenue'
     },

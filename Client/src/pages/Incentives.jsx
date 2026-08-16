@@ -7,7 +7,7 @@ import {
   TrendingUp,
   TrendingDown,
   Users,
-  DollarSign,
+  IndianRupee,
   Plus,
   Eye,
   Edit,
@@ -74,6 +74,7 @@ import {
 } from '../constants/formStyles'
 import { incentivesApi, clearCacheEntry } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { formatCurrency, formatCurrencyCompact } from '../utils/currencyFormatter'
 
 const MotionTableRow = motion(TableRow)
 
@@ -176,7 +177,7 @@ const Incentives = () => {
 
   const iconMap = {
     Target,
-    DollarSign,
+    IndianRupee,
     Users,
     Award
   }
@@ -241,6 +242,7 @@ const Incentives = () => {
       clearCacheEntry('/incentives/analytics', 'GET')
       fetchIncentives()
       fetchAnalytics()
+      window.dispatchEvent(new Event('analytics:refresh'))
       setToastMessage('Incentive created successfully')
       setToastSeverity('success')
       setShowToast(true)
@@ -278,6 +280,7 @@ const Incentives = () => {
       clearCacheEntry('/incentives/analytics', 'GET')
       fetchIncentives()
       fetchAnalytics()
+      window.dispatchEvent(new Event('analytics:refresh'))
       setToastMessage('Incentive updated successfully')
       setToastSeverity('success')
       setShowToast(true)
@@ -306,6 +309,7 @@ const Incentives = () => {
       clearCacheEntry('/incentives/analytics', 'GET')
       fetchIncentives()
       fetchAnalytics()
+      window.dispatchEvent(new Event('analytics:refresh'))
       setToastMessage('Incentive deleted successfully')
       setToastSeverity('success')
       setShowToast(true)
@@ -396,10 +400,10 @@ const Incentives = () => {
     },
     {
       title: 'Total Payout',
-      value: `$${(analyticsData.totalPayout / 1000).toFixed(1)}K`,
+      value: formatCurrencyCompact(analyticsData.totalPayout),
       change: '+23.7%',
       trend: 'up',
-      icon: 'DollarSign',
+      icon: 'IndianRupee',
       color: 'from-green-500 to-emerald-600',
       description: 'This quarter'
     },
@@ -414,7 +418,7 @@ const Incentives = () => {
     },
     {
       title: 'Avg. Incentive',
-      value: `$${Math.round(analyticsData.averageIncentive || 0)}`,
+      value: formatCurrency(Math.round(analyticsData.averageIncentive || 0)),
       change: '+5.8%',
       trend: 'up',
       icon: 'Award',
@@ -447,7 +451,7 @@ const Incentives = () => {
           <p className="text-foreground font-medium mb-2">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: ${entry.value.toLocaleString()}
+              {entry.name}: {formatCurrency(entry.value)}
             </p>
           ))}
         </div>
@@ -618,7 +622,7 @@ const Incentives = () => {
                 </div>
                 <div className="text-right">
                   <span className="text-sm font-medium text-foreground">{item.value}%</span>
-                  <p className="text-xs text-muted-foreground">${item.amount.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{formatCurrency(item.amount)}</p>
                 </div>
               </div>
             ))}
@@ -690,11 +694,11 @@ const Incentives = () => {
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Earned</span>
-                    <span className="text-green-400 font-semibold">${employee.totalEarned.toLocaleString()}</span>
+                    <span className="text-green-400 font-semibold">{formatCurrency(employee.totalEarned)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">This Month</span>
-                    <span className="text-blue-400 font-semibold">${employee.currentMonth.toLocaleString()}</span>
+                    <span className="text-blue-400 font-semibold">{formatCurrency(employee.currentMonth)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Incentives</span>
@@ -796,7 +800,7 @@ const Incentives = () => {
                     </TableCell>
                     <TableCell sx={tableBodyCellSx}>{incentive.department}</TableCell>
                     <TableCell sx={tableBodyCellSx}>{incentive.incentiveType}</TableCell>
-                    <TableCell sx={{ color: '#10b981', fontWeight: 600 }}>${incentive.amount.toLocaleString()}</TableCell>
+                    <TableCell sx={{ color: '#10b981', fontWeight: 600 }}>{formatCurrency(incentive.amount)}</TableCell>
                     <TableCell>
                       <Chip
                         label={incentive.status}
@@ -1108,7 +1112,7 @@ const Incentives = () => {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Amount</p>
-                  <p className="text-green-400 font-semibold">${selectedIncentive.amount?.toLocaleString()}</p>
+                  <p className="text-green-400 font-semibold">{formatCurrency(selectedIncentive.amount)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Status</p>

@@ -325,8 +325,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed, isMobile, isTablet, isLargeScree
                 transition={{ duration: 0.2 }}
                 className="flex-1"
               >
-                <p className="text-sm font-medium text-foreground">John Doe</p>
-                <p className="text-xs text-muted-foreground">Administrator</p>
+                <p className="text-sm font-medium text-foreground">
+                  {user?.firstName && user?.lastName 
+                    ? `${user.firstName} ${user.lastName}` 
+                    : user?.name || 'User'}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {user?.role || 'Employee'}
+                </p>
               </motion.div>
             )}
 

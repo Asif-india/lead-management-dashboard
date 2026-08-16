@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  BarChart3, 
-  Users, 
-  TrendingUp, 
+import {
+  BarChart3,
+  Users,
+  TrendingUp,
   DollarSign,
   Calendar,
   Download,
@@ -17,11 +17,11 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { 
-  Typography, 
-  Card, 
-  CardContent, 
-  Grid, 
+import {
+  Typography,
+  Card,
+  CardContent,
+  Grid,
   Button,
   Box,
   TextField,
